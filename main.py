@@ -37,6 +37,7 @@ class Main(QtWidgets.QWidget):
 
         # создание виджетов таблицы
         self.table_data = QtWidgets.QTableView()
+        self.table_data.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
         # подключиние модели к таблице
         self.table_data.setModel(self.model)
         # Установка делегата на второй столбец таблицы
