@@ -36,7 +36,7 @@ class Model(QAbstractTableModel):
         # установим флаги модели редактриуемость, включенность, выделяемость
         return Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
-    def data(self, index, role):
+    def data(self, index: QModelIndex, role: int) -> QVariant:
         # проверка значения на валидность
         if not index.isValid():
             return QVariant()
@@ -55,13 +55,14 @@ class Model(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return QVariant(str(self.table[index.row()][index.column()]))
 
-    def setData(self, index, value, role):
+    def setData(self, index: QModelIndex, value: QVariant, role: int) -> bool:
         # при изменении значения в таблице записываем значени в исходный numpy array
         if role == Qt.EditRole:
+            temp_data = self.table[index.row()][index.column()]
             try:
                 self.table[index.row()][index.column()] = float(value)
             except ValueError:
-                self.table[index.row()][index.column()] = 0
+                self.table[index.row()][index.column()] = temp_data
             self.c.data_changed.emit(index, index)
         return True
 
