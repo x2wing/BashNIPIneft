@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets
+from PyQt5 import QtGui
 import numpy as np
 # import h5py
 
@@ -34,9 +35,11 @@ class Main(QtWidgets.QWidget):
         self.model = Model(self.backend_data)
         # изменение данных в модели вызывет перерасчет через метод recalc
         self.model.c.data_changed.connect(self.recalc)
+        self.model.overflow.overflow.connect(self.overflow)
 
         # создание виджетов таблицы
         self.table_data = QtWidgets.QTableView()
+        # изменение значеняи ячейки одинарным щелчком
         self.table_data.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
         # подключиние модели к таблице
         self.table_data.setModel(self.model)
@@ -103,6 +106,11 @@ class Main(QtWidgets.QWidget):
         Load()(self.backend_data)
         # self.model.dataChanged()
         self.model.endResetModel()
+
+    def overflow(self):
+        QtWidgets.QMessageBox.information(self, 'Переполнение', "Слишком большое значение. Необходимо исправить")
+
+
 
 
 if __name__ == '__main__':
