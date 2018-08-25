@@ -15,11 +15,13 @@ class Model(QAbstractTableModel):
         super().__init__()
         self.table = table
         self.c = Communicate()
+        # названия заголовков столбцов
         self.header_labels = ['Column 1', 'Column 2',
                               'Column 3', 'Column 4', 'Column 5',
                               'Сумма строки', 'Накопленная сумма']
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
+        # отрисовка заголовков стобцов
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self.header_labels[section]
         return QAbstractTableModel.headerData(self, section, orientation, role)
@@ -66,7 +68,9 @@ class Model(QAbstractTableModel):
     def fill_color(self, value):
 
         """ функция возвращает значение цвета в зависимости от значения value
-            красный - отрицательное, желтый - 0, зеленый - положительное
+            красный - отрицательное,
+            желтый - 0,
+            зеленый - положительное
         """
 
         if float(value) < 0:
