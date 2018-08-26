@@ -1,14 +1,11 @@
 from PyQt5 import QtWidgets
-from PyQt5 import QtGui
 import numpy as np
 import pyqtgraph as pg
-# import h5py
 
 
 # импорт модулей проекта
 from delegate import Delegate
 from model import Model
-# from MatplotlibWidget import MatplotlibWidget
 from backend import Backend
 from iof import Save, Load
 
@@ -55,7 +52,7 @@ class Main(QtWidgets.QWidget):
         for row in range(self.backend_data.shape[0]):
             self.table_data.openPersistentEditor(self.model.index(row, cbox_column))
 
-        # создаем виджет графика
+        # создаем виджет графика graph - виджет на форме plot - график отрисованный на виджете
         graph = pg.PlotWidget(nama='graph')  # MatplotlibWidget(self)
         self.plot = graph.plot()
 
@@ -65,7 +62,6 @@ class Main(QtWidgets.QWidget):
         btnSave.clicked.connect(lambda: Save()(self.backend_data))
         btnLoad.clicked.connect(self.load_data)
 
-        # btnSave.clicked.connect(app.exit)
         # создаем лайаут для вертикального размещения виджетов
         self.layoutVertical = QtWidgets.QVBoxLayout(self)
         # добавляем виджеты в лайаут
@@ -74,9 +70,6 @@ class Main(QtWidgets.QWidget):
         self.layoutVertical.addWidget(btnSave)
 
         self.layoutVertical.addWidget(graph)
-        # x = [1, 2, 3, 4, 5]
-        # y = [10, 20, 30, 40, 50]
-        # self.matplotlib_widget.draw_plot(x, y)
 
         self.setWindowTitle('Тестовое задание')
         self.setGeometry(50, 50, 800, 800)
