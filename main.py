@@ -1,13 +1,14 @@
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
 import numpy as np
+import pyqtgraph as pg
 # import h5py
 
 
 # импорт модулей проекта
 from delegate import Delegate
 from model import Model
-from MatplotlibWidget import MatplotlibWidget
+# from MatplotlibWidget import MatplotlibWidget
 from backend import Backend
 from iof import Save, Load
 
@@ -55,7 +56,8 @@ class Main(QtWidgets.QWidget):
             self.table_data.openPersistentEditor(self.model.index(row, cbox_column))
 
         # создаем виджет графика
-        self.matplotlib_widget = MatplotlibWidget(self)
+        graph = pg.PlotWidget(nama='graph')  # MatplotlibWidget(self)
+        self.plot = graph.plot()
 
         # Создать кнопки и повесить на них события
         btnLoad = QtWidgets.QPushButton('Load')
@@ -71,7 +73,7 @@ class Main(QtWidgets.QWidget):
         self.layoutVertical.addWidget(btnLoad)
         self.layoutVertical.addWidget(btnSave)
 
-        self.layoutVertical.addWidget(self.matplotlib_widget)
+        self.layoutVertical.addWidget(graph)
         # x = [1, 2, 3, 4, 5]
         # y = [10, 20, 30, 40, 50]
         # self.matplotlib_widget.draw_plot(x, y)
@@ -94,7 +96,7 @@ class Main(QtWidgets.QWidget):
             c1, c2 = sorted(indexes_selected_column)
             x = self.backend_data[..., c1]
             y = self.backend_data[..., c2]
-            self.matplotlib_widget.draw_plot(x, y)
+            self.plot.setData(x, y)
 
     def recalc(self):
 
@@ -109,8 +111,6 @@ class Main(QtWidgets.QWidget):
 
     def overflow(self):
         QtWidgets.QMessageBox.information(self, 'Переполнение', "Слишком большое значение. Необходимо исправить")
-
-
 
 
 if __name__ == '__main__':
