@@ -3,6 +3,7 @@ import numpy as np
 
 class Backend():
     """ класс для работы с иходными данными"""
+
     def __init__(self, source, data_row, data_col):
         # исходный массив
         self.source = source
@@ -17,7 +18,6 @@ class Backend():
         # абсолютный номер столбца по которому считается накопленная сумма
         self.cumsum_column_in = 0
 
-
     def get_data(self):
         """ возвращает ссылку на исходные данные"""
         return self.source
@@ -27,7 +27,6 @@ class Backend():
         self.source[:, self.data_col + self.sum_column_ofset_out] = self.source[:, :self.data_col + 1].sum(axis=1)
         self.source[:, self.data_col + self.cumsum_column_ofset_out] = self.source[:, self.cumsum_column_in].cumsum(
             axis=0)
-
 
 
 if __name__ == '__main__':

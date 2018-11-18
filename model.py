@@ -28,7 +28,6 @@ class Model(QAbstractTableModel):
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         # отрисовка заголовков стобцов
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            print(type(self.header_labels[section]))
             return self.header_labels[section]
         return QAbstractTableModel.headerData(self, section, orientation, role)
 
