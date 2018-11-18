@@ -7,22 +7,30 @@ from delegate import Delegate
 from model import Model
 from backend import Backend
 from iof import Save, Load
+from config import YAML_config
+from dialog import File_Dialog
 
 # генерация исходных данных
 np.set_printoptions(suppress=True, precision=3)
 raw_data = np.random.randint(-100, 100, (8, 8))
+row_n = raw_data.shape[0]  # число строк в numpy массиве исходных данных
+col_n = raw_data.shape[1]  # число столбцов в numpy массиве исходных данных
+
+config_file = "config.yaml"
 
 
 class Main(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        # создание класса работы с конфигом
+        self.config = YAML_config(config_file)
         # Варианты выбора для ячеек с Combobox
         choices = ['0', '1', '2', '3', '4', '5']
         # номер столбца с QComboBox
         cbox_column = 1
 
         # Получение данные через класс Backend
-        self.backend = Backend(raw_data, raw_data.shape[0] - 1, raw_data.shape[1] - 3)
+        self.backend = Backend(raw_data, row_n - 1, col_n - 3)
         # Вычисление столбца суммы и накопления
         self.backend.recalculate()
         # Получение ссылки на numpy array
@@ -64,9 +72,11 @@ class Main(QtWidgets.QWidget):
         btnLoadFromList = QtWidgets.QPushButton('Load from list')
         # Кнопак выбора пути сохранения файла
         btnSaveToFile = QtWidgets.QPushButton('Save to file')
-        btnSave.clicked.connect(lambda: Save()(self.backend_data))
+
         btnLoad.clicked.connect(self.load_data)
-        # Список рабочих hdf5 файлов 
+        btnSave.clicked.connect(lambda: Save()(self.backend_data))
+        btnSaveToFile.clicked.connect(self.save_to_file)
+        # Список рабочих hdf5 файлов
         cmbFilesList = QtWidgets.QComboBox(self)
         # создаем лайаут для вертикального размещения виджетов
         self.layoutVertical = QtWidgets.QVBoxLayout(self)
@@ -114,6 +124,12 @@ class Main(QtWidgets.QWidget):
 
     def overflow(self):
         QtWidgets.QMessageBox.information(self, 'Переполнение', "Слишком большое значение. Необходимо исправить")
+
+    def save_to_file(self):
+
+        path = File_Dialog.get_save_filepath(self)
+        print(path, config_file, row_n, col_n)
+        self.config.save(config_file, {path: (row_n, col_n)})
 
 
 if __name__ == '__main__':
