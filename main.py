@@ -2,7 +2,6 @@ from PyQt5 import QtWidgets
 import numpy as np
 import pyqtgraph as pg
 
-
 # импорт модулей проекта
 from delegate import Delegate
 from model import Model
@@ -11,7 +10,7 @@ from iof import Save, Load
 
 # генерация исходных данных
 np.set_printoptions(suppress=True, precision=3)
-raw_data = np.random.randint(-100, 100, (8, 7))
+raw_data = np.random.randint(-100, 100, (8, 8))
 
 
 class Main(QtWidgets.QWidget):
@@ -23,7 +22,7 @@ class Main(QtWidgets.QWidget):
         cbox_column = 1
 
         # Получение данные через класс Backend
-        self.backend = Backend(raw_data, 8, 4)
+        self.backend = Backend(raw_data, raw_data.shape[0] - 1, raw_data.shape[1] - 3)
         # Вычисление столбца суммы и накопления
         self.backend.recalculate()
         # Получение ссылки на numpy array
@@ -53,7 +52,7 @@ class Main(QtWidgets.QWidget):
             self.table_data.openPersistentEditor(self.model.index(row, cbox_column))
 
         # создаем виджет графика graph - виджет на форме plot - график отрисованный на виджете
-        graph = pg.PlotWidget(nama='graph')  # MatplotlibWidget(self)
+        graph = pg.PlotWidget(nama='graph')  # pyqtgraph
         self.plot = graph.plot()
 
         # Создать кнопки и повесить на них события
@@ -72,7 +71,7 @@ class Main(QtWidgets.QWidget):
         self.layoutVertical.addWidget(graph)
 
         self.setWindowTitle('Тестовое задание')
-        self.setGeometry(50, 50, 800, 800)
+        self.setGeometry(50, 50, 1000, 800)
         self.show()
 
     def draw_graph(self):
@@ -93,7 +92,7 @@ class Main(QtWidgets.QWidget):
 
     def recalc(self):
 
-        """ перерасчет столбца сумм и накопленя в исходном numpy array"""
+        """ перерасчет столбца сумм и накопления в исходном numpy array"""
 
         self.backend.recalculate()
 

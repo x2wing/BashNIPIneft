@@ -18,21 +18,24 @@ class Model(QAbstractTableModel):
         self.table = table
         self.c = Communicate()
         self.overflow = Overflow()
-        # названия заголовков столбцов
-        self.header_labels = ['Column 1', 'Column 2',
-                              'Column 3', 'Column 4', 'Column 5',
-                              'Сумма строки', 'Накопленная сумма']
+        # генератор списка названий заголовков столбцов
+        # ['Column 1', 'Column 2', 'Column 3', ...] +
+        # ['Сумма строки', 'Накопленная сумма']
+        self.header_labels = [f'Data {col_num}'
+                              for col_num in range(1, self.table.shape[1] - 1)] \
+                             + ['Сумма строки', 'Накопленная сумма']
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         # отрисовка заголовков стобцов
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+            print(type(self.header_labels[section]))
             return self.header_labels[section]
         return QAbstractTableModel.headerData(self, section, orientation, role)
 
-    def rowCount(self, parent: QModelIndex=QModelIndex()) -> int:
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return self.table.shape[0]  # свойство numpy array shape - кортеж размерностей (длина, ширина)
 
-    def columnCount(self, parent: QModelIndex=QModelIndex()) -> int:
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return self.table.shape[1]  # свойство numpy array shape - кортеж размерностей (длина, ширина)
 
     def flags(self, index):
