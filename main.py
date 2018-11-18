@@ -58,15 +58,26 @@ class Main(QtWidgets.QWidget):
         # Создать кнопки и повесить на них события
         btnLoad = QtWidgets.QPushButton('Load')
         btnSave = QtWidgets.QPushButton('Save')
+        # Кнопка выбора загружаемого hdf5 файла
+        btnLoadFromFile = QtWidgets.QPushButton('Load from file')
+        # Кнопка выбора загружаемого hdf5 из списка
+        btnLoadFromList = QtWidgets.QPushButton('Load from list')
+        # Кнопак выбора пути сохранения файла
+        btnSaveToFile = QtWidgets.QPushButton('Save to file')
         btnSave.clicked.connect(lambda: Save()(self.backend_data))
         btnLoad.clicked.connect(self.load_data)
-
+        # Список рабочих hdf5 файлов 
+        cmbFilesList = QtWidgets.QComboBox(self)
         # создаем лайаут для вертикального размещения виджетов
         self.layoutVertical = QtWidgets.QVBoxLayout(self)
         # добавляем виджеты в лайаут
         self.layoutVertical.addWidget(self.table_data)
         self.layoutVertical.addWidget(btnLoad)
         self.layoutVertical.addWidget(btnSave)
+        self.layoutVertical.addWidget(btnLoadFromFile)
+        self.layoutVertical.addWidget(btnLoadFromList)
+        self.layoutVertical.addWidget(btnSaveToFile)
+        self.layoutVertical.addWidget(cmbFilesList)
 
         self.layoutVertical.addWidget(graph)
 
