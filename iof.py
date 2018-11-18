@@ -5,7 +5,7 @@ from pprint import pprint
 class Save:
     """ сохранить данные в файл hdf5"""
 
-    def __call__(self, data, filepath='db.hdf5', dataset_name='default'):
+    def __call__(self, data, filepath, dataset_name='default'):
         """ функция __call__ для передачи в обработчик события PyQt,
             чтобы не загромождать код в main.py
 
@@ -21,11 +21,11 @@ class Save:
 class Load:
     """ загрузит данные из hdf5"""
 
-    def __call__(self, data, filepath='db.hdf5', dataset_name='default'):
+    def __call__(self, data, filepath, dataset_name='default'):
         """ функция __call__ для передачи в обработчик события PyQt,
          чтобы не загромождать код в main.py
 
-         data - numpy array которы будет записан в файл
+         data - ссылка на numpy array которая будет перезаписана данными из файла
          filepath - путь к файлу
          dataset_name - имя датасет в hdf5
 
