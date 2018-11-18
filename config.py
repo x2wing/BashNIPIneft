@@ -1,52 +1,71 @@
 import yaml
-from iof import Save, Load
-import numpy as np
+import os.path
 from collections import OrderedDict
 
 
 class YAML_config():
+    """Класс для работы с конфигом"""
+
+    # хранилище десериализованных данных конфига
     config_data = OrderedDict()
 
-    def __init__(self, config_path):
-        self._get_config_data(config_path)
+    def __init__(self, config_path, default_config_data):
+        """ заполнение хранилища данными"""
+
+        # если файл не пустой данные берутся из конфига
+        try:
+            self._get_config_data(config_path)
+        # если пустой данные берутся из дефолтного файла и его метаданных
+        except:
+            self.add(config_path, default_config_data)
 
     def _is_file_exist(self, file_path):
-        import os.path
+        """ проверка файла на существование"""
+
         return os.path.isfile(file_path)
 
     def _rw_yaml_config(self, file_path, data=None, mode='r'):
+        """ вспомогательный метод чтения записи yaml файла"""
+
         with open(file_path, mode, encoding='utf-8') as stream:
+            # если режим чтение, возвращаем десериализованные данные из yaml-файла
             if mode == 'r':
                 return yaml.load(stream)
+            # если режим запись, сериализуем данные в файл
             elif mode == 'w':
                 yaml.dump(data, stream, default_flow_style=False, allow_unicode=True)
 
     def _get_config_data(self, config_path):
+        """ первоначальное заполнение хранилища """
         YAML_config.config_data = self._rw_yaml_config(config_path, data=None, mode='r')
+        # если конфиг пустой выбрасываем исключение
+        assert YAML_config.config_data, 'Файл конфигурации пуст'
 
     def add(self, file_path, data_item):
+        """ добавление данных(dict) в конфиг """
         YAML_config.config_data.update(data_item)
         self._rw_yaml_config(file_path, YAML_config.config_data, mode='w')
 
-    def get_paths_list(self):
+    def get_str_paths_list(self):
+        """ возвращает список строк путей и метаданных """
         return [f'{key} {value}' for key, value in YAML_config.config_data.items()]
 
-    def load(self, file_path):
-        if self._is_file_exist(file_path):
-            self._get_config_data(file_path)
-            return YAML_config.config_data
-        else:
-            print(__name__, __class__)
-            raise OSError
+    def get_paths_list(self):
+        """ возвращает список всех путей"""
+        return list(YAML_config.config_data.keys())
+
+    def get_path(self, index):
+        """ возвращает путь по индексу(номеру записи в виджете списка начиная с 0) """
+        return self.get_paths_list()[index]
 
 
 if __name__ == '__main__':
-    conf = YAML_config("config.yaml")
-    print(conf.get_paths_list())
+    conf = YAML_config
+    fpath = r'config.yaml'
+    config_data = OrderedDict({r'db2.hdf5': (8, 8)})
+    conf.add(conf, file_path=fpath, data_item=config_data)
 
     # data = np.random.randint(-100, 100, (8, 12))
-    # config_data = OrderedDict({r'db2.hdf5': (8, 9)})
-    # fpath = r'config.yaml'
     # # conf.save(fpath, config_data)
     # conf.load(fpath)
     # print(conf.save(fpath, config_data))
