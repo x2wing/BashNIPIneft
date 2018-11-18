@@ -77,7 +77,8 @@ class Main(QtWidgets.QWidget):
         btnSave.clicked.connect(lambda: Save()(self.backend_data))
         btnSaveToFile.clicked.connect(self.save_to_file)
         # Список рабочих hdf5 файлов
-        cmbFilesList = QtWidgets.QComboBox(self)
+        self.cmbFilesList = QtWidgets.QComboBox(self)
+        self.cmbFilesList.addItems(self.config.get_paths_list())
         # создаем лайаут для вертикального размещения виджетов
         self.layoutVertical = QtWidgets.QVBoxLayout(self)
         # добавляем виджеты в лайаут
@@ -87,7 +88,7 @@ class Main(QtWidgets.QWidget):
         self.layoutVertical.addWidget(btnLoadFromFile)
         self.layoutVertical.addWidget(btnLoadFromList)
         self.layoutVertical.addWidget(btnSaveToFile)
-        self.layoutVertical.addWidget(cmbFilesList)
+        self.layoutVertical.addWidget(self.cmbFilesList)
 
         self.layoutVertical.addWidget(graph)
 
@@ -127,9 +128,11 @@ class Main(QtWidgets.QWidget):
 
     def save_to_file(self):
 
-        path = File_Dialog.get_save_filepath(self)
-        print(path, config_file, row_n, col_n)
-        self.config.save(config_file, {path: (row_n, col_n)})
+        save_path = File_Dialog.get_save_filepath(self)
+        print(save_path, config_file, row_n, col_n)
+        self.config.add(config_file, {save_path: (row_n, col_n)})
+        Save()(self.backend_data, filepath=save_path)
+        self.cmbFilesList.addItem(save_path + f' ({row_n}, {col_n})')
 
 
 if __name__ == '__main__':

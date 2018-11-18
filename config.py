@@ -24,9 +24,12 @@ class YAML_config():
     def _get_config_data(self, config_path):
         YAML_config.config_data = self._rw_yaml_config(config_path, data=None, mode='r')
 
-    def save(self, file_path, data_item):
+    def add(self, file_path, data_item):
         YAML_config.config_data.update(data_item)
         self._rw_yaml_config(file_path, YAML_config.config_data, mode='w')
+
+    def get_paths_list(self):
+        return [f'{key} {value}' for key, value in YAML_config.config_data.items()]
 
     def load(self, file_path):
         if self._is_file_exist(file_path):
@@ -38,14 +41,15 @@ class YAML_config():
 
 
 if __name__ == '__main__':
-    conf = YAML_config()
+    conf = YAML_config("config.yaml")
+    print(conf.get_paths_list())
 
-    data = np.random.randint(-100, 100, (8, 12))
-    config_data = OrderedDict({r'db2.hdf5': (8, 9)})
-    fpath = r'config.yaml'
-    # conf.save(fpath, config_data)
-    conf.load(fpath)
-    print(conf.save(fpath, config_data))
+    # data = np.random.randint(-100, 100, (8, 12))
+    # config_data = OrderedDict({r'db2.hdf5': (8, 9)})
+    # fpath = r'config.yaml'
+    # # conf.save(fpath, config_data)
+    # conf.load(fpath)
+    # print(conf.save(fpath, config_data))
     # if is_file_exist(fpath):
     #     result = rw_yaml_config(fpath)
     #     print(result.keys())
