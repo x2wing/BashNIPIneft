@@ -1,28 +1,41 @@
 from PyQt5 import QtWidgets
 import numpy as np
 import pyqtgraph as pg
+import os
 
 # импорт модулей проекта
 from delegate import Delegate
 from model import Model
 from backend import Backend
 from iof import Save, Load
+from config import YAML_config
+from dialog import File_Dialog
 
 # генерация исходных данных
 np.set_printoptions(suppress=True, precision=3)
 raw_data = np.random.randint(-100, 100, (8, 8))
+row_n = raw_data.shape[0]  # число строк в numpy массиве исходных данных
+col_n = raw_data.shape[1]  # число столбцов в numpy массиве исходных данных
+# путь к конфигу
+config_file = 'config.yaml'
+# абсолютный путь к hdf5 файлу по умолчанию для случая если конфиг пустой
+default_db_filepath = os.path.abspath('db.hdf5')
+# даные для записи в конфиг если он пуст
+default_config_data = {default_db_filepath: (row_n, col_n)}
 
 
 class Main(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        # создание класса работы с конфигом
+        self.config = YAML_config(config_file, default_config_data)
         # Варианты выбора для ячеек с Combobox
         choices = ['0', '1', '2', '3', '4', '5']
         # номер столбца с QComboBox
         cbox_column = 1
 
         # Получение данные через класс Backend
-        self.backend = Backend(raw_data, raw_data.shape[0] - 1, raw_data.shape[1] - 3)
+        self.backend = Backend(raw_data, row_n - 1, col_n - 3)
         # Вычисление столбца суммы и накопления
         self.backend.recalculate()
         # Получение ссылки на numpy array
@@ -58,15 +71,32 @@ class Main(QtWidgets.QWidget):
         # Создать кнопки и повесить на них события
         btnLoad = QtWidgets.QPushButton('Load')
         btnSave = QtWidgets.QPushButton('Save')
-        btnSave.clicked.connect(lambda: Save()(self.backend_data))
-        btnLoad.clicked.connect(self.load_data)
-
+        # Кнопка выбора загружаемого hdf5 файла
+        btnLoadFromFile = QtWidgets.QPushButton('Load from file')
+        # Кнопка выбора загружаемого hdf5 из списка
+        btnLoadFromList = QtWidgets.QPushButton('Load from list')
+        # Кнопка выбора пути сохранения файла
+        btnSaveToFile = QtWidgets.QPushButton('Save to file')
+        #  события нажатия кнопок
+        btnLoad.clicked.connect(lambda: self.load_data())
+        btnSave.clicked.connect(lambda: Save()(self.backend_data, default_db_filepath))
+        btnSaveToFile.clicked.connect(self.save_to_file)
+        btnLoadFromFile.clicked.connect(self.load_from_file)
+        btnLoadFromList.clicked.connect(self.load_from_list)
+        # Создаем раскрывающийся список рабочих hdf5 файлов
+        self.cmbFilesList = QtWidgets.QComboBox(self)
+        # заполняем раскрывающийся список значениями из конфига
+        self.cmbFilesList.addItems(self.config.get_str_paths_list())
         # создаем лайаут для вертикального размещения виджетов
         self.layoutVertical = QtWidgets.QVBoxLayout(self)
         # добавляем виджеты в лайаут
         self.layoutVertical.addWidget(self.table_data)
         self.layoutVertical.addWidget(btnLoad)
         self.layoutVertical.addWidget(btnSave)
+        self.layoutVertical.addWidget(btnLoadFromFile)
+        self.layoutVertical.addWidget(btnLoadFromList)
+        self.layoutVertical.addWidget(btnSaveToFile)
+        self.layoutVertical.addWidget(self.cmbFilesList)
 
         self.layoutVertical.addWidget(graph)
 
@@ -92,17 +122,54 @@ class Main(QtWidgets.QWidget):
 
     def recalc(self):
 
-        """ перерасчет столбца сумм и накопления в исходном numpy array"""
+        """ Перерасчет столбца сумм и накопления в исходном numpy array"""
 
         self.backend.recalculate()
 
-    def load_data(self):
-        Load()(self.backend_data)
-        # self.model.dataChanged()
+    def load_data(self, filepath=default_db_filepath):
+        """ Загрузка данных из файла в nympy массив"""
+        Load()(self.backend_data, filepath)
+        # операция полного сброса модели для привентривной перересовки
+        # http://doc.qt.io/qt-5/qabstractitemmodel.html#endResetModel
         self.model.endResetModel()
+        # self.model.dataChanged()
 
     def overflow(self):
+        """ вызов сообщения о некорректном введенном значении """
         QtWidgets.QMessageBox.information(self, 'Переполнение', "Слишком большое значение. Необходимо исправить")
+
+    def save_to_file(self):
+        """ Загрузка данных в произвольный файл по выбору"""
+        # получаем путь к файлу
+        save_path = File_Dialog.get_save_filepath(self)
+        # если путь получен
+        if save_path:
+            # добавляем путь и метаданные в конфиг
+            self.config.add(config_file, {save_path: (row_n, col_n)})
+            # сохраняем данные из numpy массива в файл
+            Save()(self.backend_data, filepath=save_path)
+            # добавляем запись о данном файле в виджет списка
+            self.cmbFilesList.addItem(save_path + f' ({row_n}, {col_n})')
+
+    def load_from_file(self):
+        """ Слот загрузки данных из произвольного файла в nympy массив"""
+
+        # получаем путь на файл, откуда будут загружаются данные
+        load_path = File_Dialog.get_load_filepath(self)
+
+        if load_path:
+            # вызываем функцию загрузки и сброса данных в модели
+            self.load_data(load_path)
+
+    def load_from_list(self):
+        """ Слот загрузки данных из файла путь которого указан в виджете списка"""
+        # вычисляем номер элемента в списке он совпадает с номером элемента в конфиге
+        index = self.cmbFilesList.currentIndex()
+        # получаем путь на файл, откуда будут загружаются данные
+        load_path = self.config.get_path(index)
+        if load_path:
+            # вызываем функцию загрузки и сброса данных в модели
+            self.load_data(load_path)
 
 
 if __name__ == '__main__':
