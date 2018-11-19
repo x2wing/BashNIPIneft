@@ -6,12 +6,14 @@ from collections import OrderedDict
 class YAML_config():
     """Класс для работы с конфигом"""
 
-    # хранилище десериализованных данных конфига
-    config_data = OrderedDict()
+
+
 
     def __init__(self, config_path, default_config_data):
         """ заполнение хранилища данными"""
 
+        # хранилище десериализованных данных конфига
+        self.config_data = OrderedDict({})
         # если файл не пустой данные берутся из конфига
         try:
             self._get_config_data(config_path)
@@ -37,22 +39,22 @@ class YAML_config():
 
     def _get_config_data(self, config_path):
         """ первоначальное заполнение хранилища """
-        YAML_config.config_data = self._rw_yaml_config(config_path, data=None, mode='r')
+        self.config_data.update(self._rw_yaml_config(config_path, data=None, mode='r'))
         # если конфиг пустой выбрасываем исключение
-        assert YAML_config.config_data, 'Файл конфигурации пуст'
+        assert self.config_data, 'Файл конфигурации пуст'
 
     def add(self, file_path, data_item):
         """ добавление данных(dict) в конфиг """
-        YAML_config.config_data.update(data_item)
-        self._rw_yaml_config(file_path, YAML_config.config_data, mode='w')
+        self.config_data.update(data_item)
+        self._rw_yaml_config(file_path, self.config_data, mode='w')
 
     def get_str_paths_list(self):
         """ возвращает список строк путей и метаданных """
-        return [f'{key} {value}' for key, value in YAML_config.config_data.items()]
+        return [f'{key} {value}' for key, value in self.config_data.items()]
 
     def get_paths_list(self):
         """ возвращает список всех путей"""
-        return list(YAML_config.config_data.keys())
+        return list(self.config_data.keys())
 
     def get_path(self, index):
         """ возвращает путь по индексу(номеру записи в виджете списка начиная с 0) """
