@@ -6,9 +6,6 @@ from collections import OrderedDict
 class YAML_config():
     """Класс для работы с конфигом"""
 
-
-
-
     def __init__(self, config_path, default_config_data):
         """ заполнение хранилища данными"""
 
