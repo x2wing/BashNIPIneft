@@ -1,9 +1,9 @@
 !!python/object/apply:collections.OrderedDict
-- - - D:\pylerning\BashNIPIneft\db.hdf5
+- - - D:\projects\BashNIPIneft-dev\db.hdf5
     - !!python/tuple
       - 8
       - 8
-  - - D:/pylerning/BashNIPIneft/9.hdf5
+  - - D:/projects/BashNIPIneft-dev/10.hdf5
     - !!python/tuple
       - 8
       - 8

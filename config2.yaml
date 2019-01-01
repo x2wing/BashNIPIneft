@@ -1,0 +1,7 @@
+!!python/object/apply:collections.OrderedDict
+- - - db2.hdf5
+    - dimensions: !!python/tuple
+      - 8
+      - 8
+      max: 9999
+      min: 5

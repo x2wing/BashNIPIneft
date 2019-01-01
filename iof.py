@@ -32,7 +32,17 @@ class Load:
          """
 
         with h5py.File(filepath, 'r') as f:
+            # размерности  numpy массива и hdf5-датасета
+            numpy_shape = data.shape
+            hdf5_shape = f[dataset_name].shape
+
+            #согласование размеров numpy массива и hdf5-датасета
+            if numpy_shape != hdf5_shape:
+                data.resize((8,8), refcheck=False)
+            # считываем данные в numpy массива из hdf5-датасета
             data[:] = f[dataset_name][:]
+
+
             return data
 
 
