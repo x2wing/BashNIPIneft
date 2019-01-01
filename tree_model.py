@@ -6,7 +6,7 @@ import project_metadata
 class MyModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         super(MyModel, self).__init__(parent)
-        self.metadata = project_metadata.Metadata(r"D:\projects\BashNIPIneft-dev\HDF_FILES\geosim.meta")
+        self.metadata = project_metadata.Metadata(r"HDF_FILES\geosim.meta")
         self.get_contents()
 
 
