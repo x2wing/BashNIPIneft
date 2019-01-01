@@ -5,9 +5,12 @@ from collections import OrderedDict, defaultdict
 
 class Metadata():
 
+    current_dataset_metadata = {}
+
     def __init__(self, metafile_path: str):
+        data = {"version": 0.1}
         if not self._get_metadata(metafile_path):
-            self._rw_yaml_config(metafile_path, data={"version": 0.1}, mode='w')
+            self._rw_yaml_config(metafile_path, data=data, mode='w')
         self.metafile_path = metafile_path
 
     def _rw_yaml_config(self, file_path: str, data=None, mode='r'):
