@@ -1,8 +1,9 @@
 from collections import OrderedDict
 from PyQt5 import QtCore, QtGui, QtWidgets
-from  PyQt5.QtCore import QModelIndex
+from PyQt5.QtCore import QModelIndex
 
 import project_metadata
+
 
 class MyModel(QtGui.QStandardItemModel):
     def __init__(self, metadata, parent=None):
@@ -10,7 +11,6 @@ class MyModel(QtGui.QStandardItemModel):
         self.metadata = metadata
 
         self.get_contents()
-
 
     def get_contents(self):
         self.clear()
@@ -58,19 +58,19 @@ class MyModel(QtGui.QStandardItemModel):
                 u2 = root.child(i1)
                 for i2, k2 in enumerate(D[k1].keys()):
                     # print("i2 k2",i2, k2)
-                    if k2.find("DSET")!= -1:
+                    if k2.find("DSET") != -1:
                         u2.setChild(i2, QtGui.QStandardItem(k2))
 
+
 class ProjectTree(QtWidgets.QTreeView):
-    def __init__(self, meta_path, parent=None):
+    def __init__(self, meta_path="", parent=None):
         super().__init__(parent)
-        self.meta_path = meta_path
-        self.model = self.create_model()
-        self.set_model()
+        if meta_path:
+            self.meta_path = meta_path
+
+            self.fill_treeview(self.meta_path)
 
 
-
-        self.expandAll()
         self.clicked.connect(self._show_dataset)
 
     def create_model(self):
@@ -81,7 +81,14 @@ class ProjectTree(QtWidgets.QTreeView):
     def set_model(self):
         self.setModel(self.model)
 
-    def _show_dataset(self, index:QModelIndex):
+    def fill_treeview(self, cur_meta_path):
+        self.meta_path = cur_meta_path
+        self.model = self.create_model()
+        self.set_model()
+        self.expandAll()
+
+
+    def _show_dataset(self, index: QModelIndex):
         file = index.parent().data()
         print(f'{index.parent().data()}')
         dataset = index.data()
@@ -93,13 +100,13 @@ class ProjectTree(QtWidgets.QTreeView):
             print(project_metadata.Metadata.current_dataset_metadata[file][dataset])
 
 
-
 if __name__ == '__main__':
     import sys
 
     app = QtWidgets.QApplication(sys.argv)
     meta_path = r"HDF_FILES\geosim.meta"
-    w = ProjectTree(meta_path=meta_path)
+    w = ProjectTree()
+    w.fill_treeview(meta_path)
     w.show()
 
     sys.exit(app.exec_())
