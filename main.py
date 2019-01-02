@@ -78,6 +78,7 @@ class Main(QtWidgets.QWidget):
 
         btnGenerate = QtWidgets.QPushButton('Сгенерировать hdf5')
         btnOpenProject = QtWidgets.QPushButton('Открыть проект')
+        btn_load_dset = QtWidgets.QPushButton('Открыть dataset')
         #  события нажатия кнопок
         btnLoad.clicked.connect(lambda: self.load_data())
         btnSave.clicked.connect(lambda: Save()(self.backend_data, default_db_filepath))
@@ -85,6 +86,7 @@ class Main(QtWidgets.QWidget):
         btnLoadFromFile.clicked.connect(self.load_from_file)
         btnLoadFromList.clicked.connect(self.load_from_list)
         btnModelChange.clicked.connect(lambda: self.init_data_model_and_table((16, 16)))
+        btn_load_dset.clicked.connect(self.load_dset)
         # Создаем раскрывающийся список рабочих hdf5 файлов
         self.cmbFilesList = QtWidgets.QComboBox(self)
         # заполняем раскрывающийся список значениями из конфига
@@ -113,6 +115,7 @@ class Main(QtWidgets.QWidget):
 
         self.layoutVerticalCenter.addWidget(self.table_data)
         self.layoutVerticalCenter.addWidget(self.lbl_log)
+        self.layoutVerticalCenter.addWidget(btn_load_dset)
         self.layoutVerticalCenter.addWidget(graph)
 
         self.layoutVerticalRight.addWidget(self.tw_metadata, alignment=Qt.AlignBottom)
@@ -263,16 +266,16 @@ class Main(QtWidgets.QWidget):
         return self.tv
 
     def fill_label(self,index:QModelIndex):
-        filename = index.parent().data()
-        dataset = index.data()
-        if filename and dataset:
+        self.cur_filename = index.parent().data()
+        self.cur_dataset = index.data()
+        if self.cur_filename and self.cur_dataset:
             self.lbl_log.setText(str(f'{index.data()} {index.parent().data()}'))
-            dataset_file_path = os.path.join(Metadata.current_project_dir, filename)
-            self.load_data(dataset_file_path, dataset)
-            self.fill_metadata_table(filename, dataset)
+            self.fill_metadata_table(self.cur_filename, self.cur_dataset)
+
+
 
     def fill_metadata_table(self, filename, dataset):
-        self.tw_metadata.clear()
+        self.tw_metadata.setRowCount(0)
         current_metadata = Metadata.current_dataset_metadata[filename][dataset]
         for index, key in enumerate(current_metadata):
             print("METADATA",Metadata.current_dataset_metadata)
@@ -287,6 +290,11 @@ class Main(QtWidgets.QWidget):
                 value = str(datetime.utcfromtimestamp(current_metadata[key]).strftime('%Y-%m-%d %H:%M:%S'))
 
             self.tw_metadata.setItem(index, 1, QTableWidgetItem(value))
+
+    def load_dset(self):
+        dataset_file_path = os.path.join(Metadata.current_project_dir, self.cur_filename)
+        self.load_data(dataset_file_path, self.cur_dataset)
+
 
 
 
