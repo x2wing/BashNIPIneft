@@ -65,9 +65,9 @@ class Generator_HDF5_Hierarchy():
         metadata = {
             os.path.basename(file_path):
                 {
-                    'file create in': time.time(),
+                    'file create at': time.time(),
                  dset_name: {
-                     'dset create in': time.time(),
+                     'dset create at': time.time(),
                      'shape': n_data.shape,
                      'min': 'x',
                      'max': 'y',
@@ -120,7 +120,7 @@ class Generator_HDF5_Hierarchy():
 
 
 if __name__ == '__main__':
-    dim = (100, 100, 100)
+    dim = (100, 100)
     numbers = 10
     gen = Generator_HDF5_Hierarchy(dim, numbers, None)
     gen.generate_many()

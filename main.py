@@ -4,8 +4,9 @@ import numpy as np
 import pyqtgraph as pg
 import os
 from PyQt5.QtCore import Qt, QModelIndex
-from PyQt5.QtWidgets import QTreeWidgetItem, QTreeView, QAbstractItemView
+from PyQt5.QtWidgets import QTreeWidgetItem, QTreeView, QAbstractItemView, QTableWidgetItem
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from datetime import datetime
 
 
 # импорт модулей проекта
@@ -15,6 +16,8 @@ from backend import Backend
 from iof import Save, Load
 from config import YAML_config
 from dialog import File_Dialog
+from  tree_model import ProjectTree
+from project_metadata import Metadata
 
 # генерация исходных данных
 np.set_printoptions(suppress=True, precision=3)
@@ -28,6 +31,7 @@ default_db_filepath = os.path.abspath('db.hdf5')
 # даные для записи в конфиг если он пуст
 default_config_data = {default_db_filepath: (row_num, col_num)}
 
+raw_data = np.zeros((row_num, col_num), dtype=float)
 
 class Main(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -87,11 +91,18 @@ class Main(QtWidgets.QWidget):
         self.cmbFilesList.addItems(self.config.get_str_paths_list())
         # создаем иерархический список
         tv = self.fill_QTreeView()
+        # создаем метку под таблицей
+        self.lbl_log = QtWidgets.QLabel()
+
+        self.tw_metadata = QtWidgets.QTableWidget()
+        self.tw_metadata.setColumnCount(2)
+        # self.tw_metadata.setRowCount(5)
+
 
 
         # создаем лайаут для  размещения виджетов
         self.layoutVerticalLeft = QtWidgets.QVBoxLayout()
-        self.layoutVertical = QtWidgets.QVBoxLayout()
+        self.layoutVerticalCenter = QtWidgets.QVBoxLayout()
         self.layoutVerticalRight = QtWidgets.QVBoxLayout()
         self.layoutHorizontal = QtWidgets.QHBoxLayout(self)
 
@@ -100,20 +111,23 @@ class Main(QtWidgets.QWidget):
         self.layoutVerticalLeft.addWidget(btnGenerate)
         self.layoutVerticalLeft.addWidget(btnOpenProject)
 
-        self.layoutVertical.addWidget(self.table_data)
+        self.layoutVerticalCenter.addWidget(self.table_data)
+        self.layoutVerticalCenter.addWidget(self.lbl_log)
+        self.layoutVerticalCenter.addWidget(graph)
 
-        self.layoutVerticalRight.addWidget(btnLoad, alignment=Qt.AlignBottom)
+        self.layoutVerticalRight.addWidget(self.tw_metadata, alignment=Qt.AlignBottom)
+        self.layoutVerticalRight.addWidget(btnLoad )
         self.layoutVerticalRight.addWidget(btnSave)
         self.layoutVerticalRight.addWidget(btnLoadFromFile)
         self.layoutVerticalRight.addWidget(btnLoadFromList)
         self.layoutVerticalRight.addWidget(btnSaveToFile)
         self.layoutVerticalRight.addWidget(self.cmbFilesList)
         self.layoutVerticalRight.addWidget(btnModelChange)
-        # self.layoutVerticalRight.addWidget(graph)
+
 
         self.layoutHorizontal.addLayout(self.layoutVerticalLeft)
         # self.layoutHorizontal.setStretch(1, 1000)
-        self.layoutHorizontal.addLayout(self.layoutVertical)
+        self.layoutHorizontal.addLayout(self.layoutVerticalCenter)
         self.layoutHorizontal.addLayout(self.layoutVerticalRight)
 
 
@@ -143,9 +157,9 @@ class Main(QtWidgets.QWidget):
 
         self.backend.recalculate()
 
-    def load_data(self, filepath=default_db_filepath):
+    def load_data(self, filepath=default_db_filepath, dataset_name='default'):
         """ Загрузка данных из файла в nympy массив"""
-        Load()(self.backend_data, filepath)
+        Load()(self.backend_data, filepath,dataset_name=dataset_name)
         dimension = (self.backend_data.shape[0], self.backend_data.shape[1])
         self.init_data_model_and_table(dimension)
         # операция полного сброса модели для привентривной перересовки
@@ -194,7 +208,7 @@ class Main(QtWidgets.QWidget):
         choices = ['0', '1', '2', '3', '4', '5']
         # номер столбца с QComboBox
         cbox_column = 1
-        raw_data = np.random.randint(-100, 100, table_dimension)
+
         self.row_n = raw_data.shape[0]  # число строк в numpy массиве исходных данных
         self.col_n = raw_data.shape[1]  # число столбцов в numpy массиве исходных данных
         # Варианты выбора для ячеек с Combobox
@@ -214,6 +228,7 @@ class Main(QtWidgets.QWidget):
         self.table_data.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
         # подключиние модели к таблице
         self.table_data.setModel(self.model)
+        self.table_data.resizeColumnsToContents()
         # Установка делегата на второй столбец таблицы
         self.table_data.setItemDelegateForColumn(cbox_column, Delegate(self, choices))
         # получаем модель выделения
@@ -227,22 +242,51 @@ class Main(QtWidgets.QWidget):
 
 
     def fill_QTreeView(self):
-        tv = QtWidgets.QTreeView()
-        sti = QStandardItemModel(parent=self)
-        rootitem1 = QStandardItem('Маленькие файлы')
-        rootitem1.appendColumn([QStandardItem(f"f{j}") for j in range(10)])
-        # for i in range(10):
-        #     rootitem1.child(i).setEditable(True)
+        # self.tv = QtWidgets.QTreeView()
+        # sti = QStandardItemModel(parent=self)
+        # rootitem1 = QStandardItem('Маленькие файлы')
+        # rootitem1.appendColumn([QStandardItem(f"f{j}") for j in range(10)])
+        # # for i in range(10):
+        # #     rootitem1.child(i).setEditable(True)
+        #
+        # sti.appendRow(rootitem1)
+        # rootitem2 = QStandardItem("Большие файлы")
+        #
+        # rootitem2.appendColumn([QStandardItem(f"BIGFILE{j}") for j in range(10)])
+        # sti.appendRow(rootitem2)
+        # sti.setHorizontalHeaderLabels(['Проекты',])
+        # self.tv.setModel(sti)
 
-        sti.appendRow(rootitem1)
-        rootitem2 = QStandardItem("Большие файлы")
+        self.tv = ProjectTree(r"HDF_FILES\geosim.meta")
+        self.tv.clicked.connect(self.fill_label)
 
-        rootitem2.appendColumn([QStandardItem(f"BIGFILE{j}") for j in range(10)])
-        sti.appendRow(rootitem2)
-        sti.setHorizontalHeaderLabels(['Проекты',])
-        tv.setModel(sti)
+        return self.tv
 
-        return tv
+    def fill_label(self,index:QModelIndex):
+        filename = index.parent().data()
+        dataset = index.data()
+        if filename and dataset:
+            self.lbl_log.setText(str(f'{index.data()} {index.parent().data()}'))
+            dataset_file_path = os.path.join(Metadata.current_project_dir, filename)
+            self.load_data(dataset_file_path, dataset)
+            self.fill_metadata_table(filename, dataset)
+
+    def fill_metadata_table(self, filename, dataset):
+        self.tw_metadata.clear()
+        current_metadata = Metadata.current_dataset_metadata[filename][dataset]
+        for index, key in enumerate(current_metadata):
+            print("METADATA",Metadata.current_dataset_metadata)
+            print(index, key)
+            print('row count:',self.tw_metadata.rowCount())
+            self.tw_metadata.insertRow(index)
+            self.tw_metadata.setItem(index, 0, QTableWidgetItem(str(key)))
+
+            if str(key) != "dset create at":
+                value = str(current_metadata[key])
+            else:
+                value = str(datetime.utcfromtimestamp(current_metadata[key]).strftime('%Y-%m-%d %H:%M:%S'))
+
+            self.tw_metadata.setItem(index, 1, QTableWidgetItem(value))
 
 
 

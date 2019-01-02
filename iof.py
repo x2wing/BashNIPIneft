@@ -38,7 +38,7 @@ class Load:
 
             #согласование размеров numpy массива и hdf5-датасета
             if numpy_shape != hdf5_shape:
-                data.resize((8,8), refcheck=False)
+                data.resize(hdf5_shape, refcheck=False)
             # считываем данные в numpy массива из hdf5-датасета
             data[:] = f[dataset_name][:]
 

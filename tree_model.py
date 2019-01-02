@@ -48,16 +48,16 @@ class MyModel(QtGui.QStandardItemModel):
         #     'DSET8': {'dset create in': 1546060327.8469596, 'max': 'y', 'min': 'x', 'shape': (100, 100, 100)},
         #     'DSET9': {'dset create in': 1546060327.887829, 'max': 'y', 'min': 'x', 'shape': (100, 100, 100)},
         #     'file create in': 1546060327.5796828})])
-
+        print(D.pop("version", None))
         print(D)
         root = self.invisibleRootItem()
         for i1, k1 in enumerate(D.keys()):
             if k1 != "version":
-                c = root.setChild(i1, QtGui.QStandardItem(k1))
-                print(f'child object {c})')
+                root.setChild(i1, QtGui.QStandardItem(k1))
+                # print(f'child object {c})')
                 u2 = root.child(i1)
                 for i2, k2 in enumerate(D[k1].keys()):
-                    print("i2 k2",i2, k2)
+                    # print("i2 k2",i2, k2)
                     if k2.find("DSET")!= -1:
                         u2.setChild(i2, QtGui.QStandardItem(k2))
 
@@ -69,25 +69,28 @@ class ProjectTree(QtWidgets.QTreeView):
         self.set_model()
 
 
-        self.show()
+
         self.expandAll()
-        self.clicked.connect(self.show_dataset)
+        self.clicked.connect(self._show_dataset)
 
     def create_model(self):
-        self.metadata_instance = project_metadata.Metadata(meta_path)
+        self.metadata_instance = project_metadata.Metadata(self.meta_path)
         self.metadata = self.metadata_instance.get_metadata()
         return MyModel(self.metadata)
 
     def set_model(self):
         self.setModel(self.model)
 
-    def show_dataset(self, index:QModelIndex):
-        dataset = index.data()
-        print(f'{index.data()}')
+    def _show_dataset(self, index:QModelIndex):
         file = index.parent().data()
         print(f'{index.parent().data()}')
-        project_metadata.Metadata.current_dataset_metadata = self.metadata[file][dataset]
-        print(project_metadata.Metadata.current_dataset_metadata)
+        dataset = index.data()
+        print(f'{index.data()}')
+        if file and dataset:
+            project_metadata.Metadata.current_dataset_metadata[file][dataset] = self.metadata[file][dataset]
+            print(project_metadata.Metadata.current_dataset_metadata)
+            print(project_metadata.Metadata.current_dataset_metadata[file])
+            print(project_metadata.Metadata.current_dataset_metadata[file][dataset])
 
 
 
@@ -97,5 +100,6 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     meta_path = r"HDF_FILES\geosim.meta"
     w = ProjectTree(meta_path=meta_path)
+    w.show()
 
     sys.exit(app.exec_())
