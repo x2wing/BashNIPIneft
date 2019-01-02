@@ -4,9 +4,11 @@ from collections import OrderedDict, defaultdict
 
 
 class Metadata():
+    cur_filename = ""
+    cur_dataset = ""
+
     current_datafile_path = ""
     current_project_dir = ""
-
     current_dataset_metadata = defaultdict(dict)
 
 
@@ -39,6 +41,7 @@ class Metadata():
 
     def save_metadata(self, new_metadata: dict):
         metadata_from_file = self._get_metadata(self.metafile_path)
+        print('metadata_from_file', metadata_from_file)
         if metadata_from_file:
             metadata = OrderedDict({})
             metadata.update(metadata_from_file)
@@ -49,12 +52,13 @@ class Metadata():
                 print(metadata)
                 print(metadata['DSET0.h5geo'])
                 for key, value in new_metadata[new_key].items():
-                    metadata[new_key].setdefault(key, value)
+                    # metadata[new_key].setdefault(key, value)
+                    metadata[new_key].update(new_metadata[new_key])
             else:
                 metadata.update(new_metadata)
             self._rw_yaml_config(self.metafile_path, metadata, mode='w')
         else:
-            assert False, "файл не прочитан, пуст или не существует"
+            assert False, f"файл {self.metafile_path} не прочитан, пуст или не существует"
 
 
 if __name__ == '__main__':
