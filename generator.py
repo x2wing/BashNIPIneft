@@ -6,7 +6,7 @@ import os
 import time
 
 import project_metadata
-
+from profiler import profile
 
 # from hdf5client import hdf5_Client
 
@@ -69,8 +69,8 @@ class Generator_HDF5_Hierarchy():
                  dset_name: {
                      'dset create at': time.time(),
                      'shape': n_data.shape,
-                     'min': 'x',
-                     'max': 'y',
+                     'min': n_data.min(),
+                     'max': n_data.max(),
                  }
                  }
         }
@@ -87,7 +87,8 @@ class Generator_HDF5_Hierarchy():
             # return
             self.set_metadata(dset_name, n_data, file_path)
 
-    @timer
+    # @timer
+    @profile
     def generate_many(self):
         for i in range(self.num):
             file_name = f"{self.file_name_template}{i}"
@@ -100,7 +101,8 @@ class Generator_HDF5_Hierarchy():
             with h5py.File(file_path, mode='w') as f:
                 self.create_dataset_wrapper(f, self.dataset_template, file_path, n_data=data)
 
-    @timer
+    # @timer
+    @profile
     def generate_one_big(self):
 
         file_path = os.path.join(self.dir_path,
@@ -120,7 +122,7 @@ class Generator_HDF5_Hierarchy():
 
 
 if __name__ == '__main__':
-    dim = (100, 100)
+    dim = (150, 150)
     numbers = 10
     gen = Generator_HDF5_Hierarchy(dim, numbers, None)
     gen.generate_many()
