@@ -53,8 +53,8 @@ class Model(QAbstractTableModel):
 
         # раскраска ячеек функция fill_color выводи цвет ячейки
         # красный - отрицательное  желтый - 0 зеленый - положительное
-        if role == Qt.BackgroundColorRole:
-            return self.fill_color(value)
+        # if role == Qt.BackgroundColorRole:
+        #     return self.fill_color(value)
 
         # выдаем значение в модель из исходного numpy array
         if role == Qt.DisplayRole:
