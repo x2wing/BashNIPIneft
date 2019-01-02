@@ -9,14 +9,15 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from datetime import datetime
 
 # импорт модулей проекта
-from delegate import Delegate
-from model import Model
 from backend import Backend
-from iof import Save, Load
 from config import YAML_config
+from delegate import Delegate
 from dialog import File_Dialog
-from tree_model import ProjectTree
+from generator import Generator_HDF5_Hierarchy
+from model import Model
+from iof import Save, Load
 from project_metadata import Metadata
+from tree_model import ProjectTree
 
 # генерация исходных данных
 np.set_printoptions(suppress=True, precision=3)
@@ -83,6 +84,7 @@ class Main(QtWidgets.QWidget):
         btnLoadFromList.clicked.connect(self.load_from_list)
         btnModelChange.clicked.connect(lambda: self.init_data_model_and_table((16, 16)))
         btn_load_dset.clicked.connect(self.load_dset)
+        btnGenerate.clicked.connect(self.generate_datafiles)
         # Создаем раскрывающийся список рабочих hdf5 файлов
         self.cmbFilesList = QtWidgets.QComboBox(self)
         # заполняем раскрывающийся список значениями из конфига
@@ -286,6 +288,13 @@ class Main(QtWidgets.QWidget):
         if Metadata.cur_filename:
             dataset_file_path = os.path.join(Metadata.current_project_dir, Metadata.cur_filename)
             self.load_data(dataset_file_path, Metadata.cur_dataset)
+
+    def generate_datafiles(self):
+        dim = (150, 150)
+        numbers = 10
+        gen = Generator_HDF5_Hierarchy(dim, numbers, None)
+        gen.generate_many()
+        gen.generate_one_big()
 
 
 if __name__ == '__main__':
