@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import QTreeWidgetItem, QTreeView, QAbstractItemView, QTabl
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from datetime import datetime
 
-
 # импорт модулей проекта
 from delegate import Delegate
 from model import Model
@@ -16,7 +15,7 @@ from backend import Backend
 from iof import Save, Load
 from config import YAML_config
 from dialog import File_Dialog
-from  tree_model import ProjectTree
+from tree_model import ProjectTree
 from project_metadata import Metadata
 
 # генерация исходных данных
@@ -32,6 +31,7 @@ default_db_filepath = os.path.abspath('db.hdf5')
 default_config_data = {default_db_filepath: (row_num, col_num)}
 
 raw_data = np.zeros((row_num, col_num), dtype=float)
+
 
 class Main(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -56,10 +56,6 @@ class Main(QtWidgets.QWidget):
         # # изменение данных в модели вызывет перерасчет через метод recalc depricated
         # self.model.c.data_changed.connect(self.recalc)
         # self.model.overflow.overflow.connect(self.overflow)
-
-
-
-
 
         # создаем виджет графика graph - виджет на форме plot - график отрисованный на виджете
         graph = pg.PlotWidget(nama='graph')  # pyqtgraph
@@ -95,14 +91,11 @@ class Main(QtWidgets.QWidget):
         tv = self.fill_QTreeView()
         # создаем метку под таблицей
         self.lbl_log = QtWidgets.QLabel()
-
+        # создаем QTableWidget для отображения методанных
         self.tw_metadata = QtWidgets.QTableWidget()
         self.tw_metadata.setColumnCount(2)
-        # self.tw_metadata.setRowCount(5)
 
-
-
-        # создаем лайаут для  размещения виджетов
+        # создаем лайауты для  размещения виджетов
         self.layoutVerticalLeft = QtWidgets.QVBoxLayout()
         self.layoutVerticalCenter = QtWidgets.QVBoxLayout()
         self.layoutVerticalRight = QtWidgets.QVBoxLayout()
@@ -119,7 +112,7 @@ class Main(QtWidgets.QWidget):
         self.layoutVerticalCenter.addWidget(graph)
 
         self.layoutVerticalRight.addWidget(self.tw_metadata, alignment=Qt.AlignBottom)
-        self.layoutVerticalRight.addWidget(btnLoad )
+        self.layoutVerticalRight.addWidget(btnLoad)
         self.layoutVerticalRight.addWidget(btnSave)
         self.layoutVerticalRight.addWidget(btnLoadFromFile)
         self.layoutVerticalRight.addWidget(btnLoadFromList)
@@ -127,12 +120,11 @@ class Main(QtWidgets.QWidget):
         self.layoutVerticalRight.addWidget(self.cmbFilesList)
         self.layoutVerticalRight.addWidget(btnModelChange)
 
-
+        # добавляем вертикальные лайауты в горизонтальные
         self.layoutHorizontal.addLayout(self.layoutVerticalLeft)
         # self.layoutHorizontal.setStretch(1, 1000)
         self.layoutHorizontal.addLayout(self.layoutVerticalCenter)
         self.layoutHorizontal.addLayout(self.layoutVerticalRight)
-
 
         self.setWindowTitle('Тестовое задание')
         self.setGeometry(50, 50, 1000, 800)
@@ -162,8 +154,11 @@ class Main(QtWidgets.QWidget):
 
     def load_data(self, filepath=default_db_filepath, dataset_name='default'):
         """ Загрузка данных из файла в nympy массив"""
-        Load()(self.backend_data, filepath,dataset_name=dataset_name)
+        # загружаем данные из hdf5  файла в numpy массив self.backend_data
+        Load()(self.backend_data, filepath, dataset_name=dataset_name)
+        # получаем размерности таблицы
         dimension = (self.backend_data.shape[0], self.backend_data.shape[1])
+        # заполнение таблицы
         self.init_data_model_and_table(dimension)
         # операция полного сброса модели для привентривной перересовки
         # http://doc.qt.io/qt-5/qabstractitemmodel.html#endResetModel
@@ -194,7 +189,7 @@ class Main(QtWidgets.QWidget):
         load_path = File_Dialog.get_load_filepath(self)
 
         if load_path:
-            # вызываем функцию загрузки и сброса данных в модели
+            # вызываем функцию загрузки и сброса данных в модель
             self.load_data(load_path)
 
     def load_from_list(self):
@@ -225,7 +220,6 @@ class Main(QtWidgets.QWidget):
         self.model.c.data_changed.connect(self.recalc)
         self.model.overflow.overflow.connect(self.overflow)
 
-
         # создание виджетов таблицы
         # изменение значеняи ячейки одинарным щелчком
         self.table_data.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
@@ -242,7 +236,6 @@ class Main(QtWidgets.QWidget):
         # сделать Combobox редактируемым одним щелчком во 2(1) столбце
         for row in range(self.backend_data.shape[0]):
             self.table_data.openPersistentEditor(self.model.index(row, cbox_column))
-
 
     def fill_QTreeView(self):
         # self.tv = QtWidgets.QTreeView()
@@ -265,22 +258,20 @@ class Main(QtWidgets.QWidget):
 
         return self.tv
 
-    def fill_label(self,index:QModelIndex):
-        self.cur_filename = index.parent().data()
-        self.cur_dataset = index.data()
-        if self.cur_filename and self.cur_dataset:
-            self.lbl_log.setText(str(f'{index.data()} {index.parent().data()}'))
-            self.fill_metadata_table(self.cur_filename, self.cur_dataset)
-
-
+    def fill_label(self, index: QModelIndex):
+        Metadata.cur_filename = index.parent().data()
+        Metadata.cur_dataset = index.data()
+        if Metadata.cur_filename and Metadata.cur_dataset:
+            self.lbl_log.setText(str(f'{Metadata.cur_dataset} {Metadata.cur_filename}'))
+            self.fill_metadata_table(Metadata.cur_filename, Metadata.cur_dataset)
 
     def fill_metadata_table(self, filename, dataset):
         self.tw_metadata.setRowCount(0)
         current_metadata = Metadata.current_dataset_metadata[filename][dataset]
         for index, key in enumerate(current_metadata):
-            print("METADATA",Metadata.current_dataset_metadata)
+            print("METADATA", Metadata.current_dataset_metadata)
             print(index, key)
-            print('row count:',self.tw_metadata.rowCount())
+            print('row count:', self.tw_metadata.rowCount())
             self.tw_metadata.insertRow(index)
             self.tw_metadata.setItem(index, 0, QTableWidgetItem(str(key)))
 
@@ -292,14 +283,9 @@ class Main(QtWidgets.QWidget):
             self.tw_metadata.setItem(index, 1, QTableWidgetItem(value))
 
     def load_dset(self):
-        dataset_file_path = os.path.join(Metadata.current_project_dir, self.cur_filename)
-        self.load_data(dataset_file_path, self.cur_dataset)
-
-
-
-
-
-
+        if Metadata.cur_filename:
+            dataset_file_path = os.path.join(Metadata.current_project_dir, Metadata.cur_filename)
+            self.load_data(dataset_file_path, Metadata.cur_dataset)
 
 
 if __name__ == '__main__':
