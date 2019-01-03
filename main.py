@@ -1,3 +1,5 @@
+
+# use pipreqs --ignore .git --encoding utf8 --force "BashNIPIneft" to create requirements.txt
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 import numpy as np
