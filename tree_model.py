@@ -5,9 +5,9 @@ from PyQt5.QtCore import QModelIndex
 import project_metadata
 
 
-class MyModel(QtGui.QStandardItemModel):
+class ProjectModel(QtGui.QStandardItemModel):
     def __init__(self, metadata, parent=None):
-        super(MyModel, self).__init__(parent)
+        super(ProjectModel, self).__init__(parent)
         self.metadata = metadata
 
         self.get_contents()
@@ -15,8 +15,7 @@ class MyModel(QtGui.QStandardItemModel):
     def get_contents(self):
         self.clear()
         D = self.metadata
-        print(D.pop("version", None))
-        print(D)
+        D.pop("version", None)
         root = self.invisibleRootItem()
         for i1, k1 in enumerate(D.keys()):
             if k1 != "version":
@@ -38,7 +37,7 @@ class ProjectTree(QtWidgets.QTreeView):
     def create_model(self):
         self.metadata_instance = project_metadata.Metadata(self.meta_path)
         self.metadata = self.metadata_instance.get_metadata()
-        return MyModel(self.metadata)
+        return ProjectModel(self.metadata)
 
     def set_model(self):
         self.setModel(self.model)

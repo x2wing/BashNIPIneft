@@ -1,4 +1,3 @@
-from pprint import pprint
 
 import h5py
 import numpy as np
@@ -58,10 +57,9 @@ class Generator_HDF5_Hierarchy():
     def get_numpy_data(self, dimensions: tuple):
         return np.random.random(dimensions)
 
-    # @timer
+    @timer
     def set_metadata(self, dset_name, n_data: np.ndarray, file_path):
         metadata_path = os.path.dirname(file_path) + '\geosim.meta'
-        print(metadata_path)
         metadata = {
             os.path.basename(file_path):
                 {
@@ -74,7 +72,6 @@ class Generator_HDF5_Hierarchy():
                  }
                  }
         }
-        # pprint(metadata)
 
         self.metadata_save.save_metadata(metadata)
 
@@ -87,27 +84,23 @@ class Generator_HDF5_Hierarchy():
             # return
             self.set_metadata(dset_name, n_data, file_path)
 
-    # @timer
-    @profile
+    @timer
+    # @profile
     def generate_many(self):
         for i in range(self.num):
             file_name = f"{self.file_name_template}{i}"
-            # dataset_name = f"{self.dataset_template}{i}"
-
             file_path = os.path.join(self.dir_path,
                                      file_name + '.h5geo')
-            print(file_path)
             data = self.get_numpy_data(self.dimensions)
             with h5py.File(file_path, mode='w') as f:
                 self.create_dataset_wrapper(f, self.dataset_template, file_path, n_data=data)
 
-    # @timer
-    @profile
+    @timer
+    # @profile
     def generate_one_big(self):
 
         file_path = os.path.join(self.dir_path,
                                  self.file_name_template + 'BIG.h5geo')
-        print(file_path)
         with h5py.File(file_path, mode='w') as f:
             for i in range(self.num):
                 data = self.get_numpy_data(self.dimensions)

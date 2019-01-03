@@ -41,16 +41,13 @@ class Metadata():
 
     def save_metadata(self, new_metadata: dict):
         metadata_from_file = self._get_metadata(self.metafile_path)
-        print('metadata_from_file', metadata_from_file)
+        # print('metadata_from_file', metadata_from_file)
         if metadata_from_file:
             metadata = OrderedDict({})
             metadata.update(metadata_from_file)
             # вытаскиваем ключ из добавляемого словаря
             new_key = next(iter(new_metadata.keys()))
             if new_key in metadata:
-                print(new_metadata)
-                print(metadata)
-                print(metadata['DSET0.h5geo'])
                 for key, value in new_metadata[new_key].items():
                     # metadata[new_key].setdefault(key, value)
                     metadata[new_key].update(new_metadata[new_key])
@@ -63,9 +60,9 @@ class Metadata():
 
 if __name__ == '__main__':
     Meta = Metadata(r"D:\projects\BashNIPIneft-dev\HDF_FILES\geosim.meta")
-    print(
-        Meta.get_metadata()
-    )
+    # print(
+    #     Meta.get_metadata()
+    # )
     # Meta.save_metadata({
     #     'DSET0.h5geo':
     #         {
