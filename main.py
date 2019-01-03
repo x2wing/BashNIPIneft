@@ -254,46 +254,69 @@ class Main(QtWidgets.QWidget):
         # sti.appendRow(rootitem2)
         # sti.setHorizontalHeaderLabels(['Проекты',])
         # self.tv.setModel(sti)
-
+        # создаем QTreeView
         self.tv = ProjectTree(r"HDF_FILES\geosim.meta")
-        self.tv.clicked.connect(self.fill_label)
+        # вешаем событие нажатия на элемент дерева
+        self.tv.clicked.connect(self.save_current_dataset_item)
 
         return self.tv
 
-    def fill_label(self, index: QModelIndex):
+    def save_current_dataset_item(self, index: QModelIndex):
+        # получаем имя hdf5 файла выбранного элемента в дереве tv
         Metadata.cur_filename = index.parent().data()
+        # получаем имя выбранного датасета
         Metadata.cur_dataset = index.data()
+        # если выбран датасет а не что-то другое
         if Metadata.cur_filename and Metadata.cur_dataset:
+            # выводим имена файла и датасета в метку lbl_log
             self.lbl_log.setText(str(f'{Metadata.cur_dataset} {Metadata.cur_filename}'))
+            #  заполняем таблицу метаданных
             self.fill_metadata_table(Metadata.cur_filename, Metadata.cur_dataset)
 
     def fill_metadata_table(self, filename, dataset):
+        """ заполняем таблицу QTableWidjet метаданными выбранного датасета"""
+        # очистка таблицы QTableWidjet
         self.tw_metadata.setRowCount(0)
+        # вытаскиваем метаданные выбранного датасета
         current_metadata = Metadata.current_dataset_metadata[filename][dataset]
+        # заполняем таблицу
         for index, key in enumerate(current_metadata):
             print("METADATA", Metadata.current_dataset_metadata)
             print(index, key)
             print('row count:', self.tw_metadata.rowCount())
+            # вставляем строку в таблицу QTableWidjet
             self.tw_metadata.insertRow(index)
+            # заносим название параметра в таблицу QTableWidjet
             self.tw_metadata.setItem(index, 0, QTableWidgetItem(str(key)))
-
+            # преобразуем unix time в человеко понятный формат в параметре 'dset create at'
             if str(key) != "dset create at":
                 value = str(current_metadata[key])
             else:
                 value = str(datetime.utcfromtimestamp(current_metadata[key]).strftime('%Y-%m-%d %H:%M:%S'))
-
+            # заносим значение параметра в таблицу QTableWidjet
             self.tw_metadata.setItem(index, 1, QTableWidgetItem(value))
 
     def load_dset(self):
+        """функция заполнения таблицы данными из выбранного датасета"""
+        # если датасет выбран  в деревер
         if Metadata.cur_filename:
+            # собираем путь до файла с датасетом
             dataset_file_path = os.path.join(Metadata.current_project_dir, Metadata.cur_filename)
+            # загружаем данные в numpy массив и в таблицу
             self.load_data(dataset_file_path, Metadata.cur_dataset)
 
     def generate_datafiles(self):
+        """ функция генерации проекта(множестов мелких файлов с одним датасетом в каждом
+        и один большой с нескольким датасетами )"""
+        # размерность генерируемых таблиц
         dim = (150, 150)
+        # число генерируемы датасетов в одном файле и файлов с одним датасетом
         numbers = 10
+        # класс генератора путь к метафайлу (по умолчанию)  "HDF_FILES\geosim.meta"
         gen = Generator_HDF5_Hierarchy(dim, numbers, None)
+        # создается много hdf5 файлов c одним датасетом
         gen.generate_many()
+        # создается один файл с несколькими датасетами
         gen.generate_one_big()
 
 
