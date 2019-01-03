@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QModelIndex
 
@@ -32,7 +32,7 @@ class ProjectTree(QtWidgets.QTreeView):
         if meta_path:
             self.meta_path = meta_path
             self.fill_treeview(self.meta_path)
-        self.clicked.connect(self._show_dataset)
+        self.clicked.connect(self.set_current_dataset)
 
     def create_model(self):
         self.metadata_instance = project_metadata.Metadata(self.meta_path)
@@ -48,11 +48,15 @@ class ProjectTree(QtWidgets.QTreeView):
         self.set_model()
         self.expandAll()
 
-    def _show_dataset(self, index: QModelIndex):
+    def set_current_dataset(self, index: QModelIndex):
         file = index.parent().data()
         dataset = index.data()
         if file and dataset:
+            project_metadata.Metadata.current_dataset_metadata=defaultdict(dict)
             project_metadata.Metadata.current_dataset_metadata[file][dataset] = self.metadata[file][dataset]
+
+    def update_metadata(self):
+        self.fill_treeview(self.meta_path)
 
 
 if __name__ == '__main__':

@@ -40,8 +40,6 @@ def timer(foo):
 
     def wrapper(self, *args, **kargs):
         tm = time.time()
-        print(dir())
-        print(args)
         result = foo(self, *args, **kargs)
         print(f"ВРЕМЯ ВЫПОЛНЕНИЯ {foo.__name__}", time.time() - tm)
         return result
@@ -298,7 +296,7 @@ class Main(QtWidgets.QWidget):
         # очистка таблицы QTableWidjet
         self.tw_metadata.setRowCount(0)
         # вытаскиваем метаданные выбранного датасета
-        current_metadata = Metadata.current_dataset_metadata[filename][dataset]
+        current_metadata = Metadata.get_current_dataset_metadata(filename, dataset)
         # заполняем таблицу
         for index, key in enumerate(current_metadata):
             # вставляем строку в таблицу QTableWidjet
@@ -334,10 +332,11 @@ class Main(QtWidgets.QWidget):
     @timer
     def open_project(self, debug="открыть проект"):
         # получаем путь к файлу метаданных проекта
-        metadata_path = File_Dialog.get_load_metadata_filepath(self)
+        self.h5geo_file_path = File_Dialog.get_load_metadata_filepath(self)
         # заполняем дерево QTreeView
-        if metadata_path:
-            self.tv.fill_treeview(metadata_path)
+        if self.h5geo_file_path:
+            self.tv.fill_treeview(self.h5geo_file_path)
+
 
     @timer
     def load_dset(self, debug="загрузка данных в таблицу"):
@@ -357,6 +356,12 @@ class Main(QtWidgets.QWidget):
         if Metadata.cur_filename:
             dataset_file_path = os.path.join(Metadata.current_project_dir, Metadata.cur_filename)
             SaveDataset().__call__(self.backend_data, dataset_file_path, Metadata.cur_dataset)
+
+            metadata_instance = Metadata(self.h5geo_file_path)
+            metadata_instance.set_metadata(self.backend_data)
+            self.fill_metadata_table(Metadata.cur_filename, Metadata.cur_dataset)
+            self.tv.update_metadata()
+
             QtWidgets.QMessageBox.information(self, 'Сохранение',
                                               f"Сохранение dataset {Metadata.cur_dataset} "
                                               f"в файл {dataset_file_path} успешно завершено")

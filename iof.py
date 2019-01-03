@@ -1,5 +1,18 @@
 import h5py
-from pprint import pprint
+import time
+
+
+def timer(foo):
+    """ декоратор. выводит время выполнения методов"""
+
+    def wrapper(self, *args, **kargs):
+        tm = time.time()
+        result = foo(self, *args, **kargs)
+        print(f"ВРЕМЯ ВЫПОЛНЕНИЯ {foo.__name__}", time.time() - tm)
+        return result
+
+    return wrapper
+
 
 
 class Save:
@@ -21,6 +34,7 @@ class Save:
 class SaveDataset:
     """ перезаписать данные в существующий датасет"""
 
+    @timer
     def __call__(self, data, filepath: str, dataset_name: str):
         """
              data - numpy array которы будет записан в файл
@@ -34,7 +48,7 @@ class SaveDataset:
 
 class Load:
     """ загрузит данные из hdf5"""
-
+    @timer
     def __call__(self, data, filepath: str, dataset_name='default'):
         """ функция __call__ для передачи в обработчик события PyQt,
          чтобы не загромождать код в main.py
