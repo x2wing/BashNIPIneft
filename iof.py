@@ -5,7 +5,7 @@ from pprint import pprint
 class Save:
     """ сохранить данные в файл hdf5"""
 
-    def __call__(self, data, filepath, dataset_name='default'):
+    def __call__(self, data, filepath: str, dataset_name='default'):
         """ функция __call__ для передачи в обработчик события PyQt,
             чтобы не загромождать код в main.py
 
@@ -18,10 +18,24 @@ class Save:
             f.create_dataset(dataset_name, data=data)
 
 
+class SaveDataset:
+    """ перезаписать данные в существующий датасет"""
+
+    def __call__(self, data, filepath: str, dataset_name: str):
+        """
+             data - numpy array которы будет записан в файл
+             filepath - путь к файлу
+             dataset_name - имя датасет в hdf5 куда будут записаны данные
+        """
+
+        with h5py.File(filepath, 'r+') as f:
+            f[dataset_name][:] = data
+
+
 class Load:
     """ загрузит данные из hdf5"""
 
-    def __call__(self, data, filepath, dataset_name='default'):
+    def __call__(self, data, filepath: str, dataset_name='default'):
         """ функция __call__ для передачи в обработчик события PyQt,
          чтобы не загромождать код в main.py
 
@@ -36,12 +50,11 @@ class Load:
             numpy_shape = data.shape
             hdf5_shape = f[dataset_name].shape
 
-            #согласование размеров numpy массива и hdf5-датасета
+            # согласование размеров numpy массива и hdf5-датасета
             if numpy_shape != hdf5_shape:
                 data.resize(hdf5_shape, refcheck=False)
             # считываем данные в numpy массива из hdf5-датасета
             data[:] = f[dataset_name][:]
-
 
             return data
 

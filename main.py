@@ -7,6 +7,7 @@ from PyQt5.QtCore import Qt, QModelIndex
 from PyQt5.QtWidgets import QTreeWidgetItem, QTreeView, QAbstractItemView, QTableWidgetItem
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from datetime import datetime
+import time
 
 # импорт модулей проекта
 from backend import Backend
@@ -15,7 +16,7 @@ from delegate import Delegate
 from dialog import File_Dialog
 from generator import Generator_HDF5_Hierarchy
 from model import Model
-from iof import Save, Load
+from iof import Save, Load, SaveDataset
 from project_metadata import Metadata
 from tree_model import ProjectTree
 
@@ -32,6 +33,20 @@ default_db_filepath = os.path.abspath('db.hdf5')
 default_config_data = {default_db_filepath: (row_num, col_num)}
 
 raw_data = np.zeros((row_num, col_num), dtype=float)
+
+
+def timer(foo):
+    """ декоратор. выводит время выполнения методов"""
+
+    def wrapper(self, *args, **kargs):
+        tm = time.time()
+        print(dir())
+        print(args)
+        result = foo(self, *args, **kargs)
+        print(f"ВРЕМЯ ВЫПОЛНЕНИЯ {foo.__name__}", time.time() - tm)
+        return result
+
+    return wrapper
 
 
 class Main(QtWidgets.QWidget):
@@ -75,7 +90,8 @@ class Main(QtWidgets.QWidget):
 
         btnGenerate = QtWidgets.QPushButton('Сгенерировать hdf5')
         btnOpenProject = QtWidgets.QPushButton('Открыть проект')
-        btn_load_dset = QtWidgets.QPushButton('Открыть dataset')
+        btn_load_dset = QtWidgets.QPushButton('Загрузить dataset')
+        btn_save_dset = QtWidgets.QPushButton('Сохранить dataset')
         #  события нажатия кнопок
         btnLoad.clicked.connect(lambda: self.load_data())
         btnSave.clicked.connect(lambda: Save()(self.backend_data, default_db_filepath))
@@ -84,6 +100,7 @@ class Main(QtWidgets.QWidget):
         btnLoadFromList.clicked.connect(self.load_from_list)
         btnModelChange.clicked.connect(lambda: self.init_data_model_and_table((16, 16)))
         btn_load_dset.clicked.connect(self.load_dset)
+        btn_save_dset.clicked.connect(self.save_dset)
         btnGenerate.clicked.connect(self.generate_datafiles)
         btnOpenProject.clicked.connect(self.open_project)
         # Создаем раскрывающийся список рабочих hdf5 файлов
@@ -92,11 +109,21 @@ class Main(QtWidgets.QWidget):
         self.cmbFilesList.addItems(self.config.get_str_paths_list())
         # создаем иерархический список
         self.tv = self.create_QTreeView()
+        # self.tv.setFixedHeight(400)
         # создаем метку под таблицей
         self.lbl_log = QtWidgets.QLabel()
         # создаем QTableWidget для отображения методанных
         self.tw_metadata = QtWidgets.QTableWidget()
         self.tw_metadata.setColumnCount(2)
+        self.teNum = QtWidgets.QTextEdit("10")
+        self.teNum.setFixedHeight(25)
+        self.teNum.setToolTip('количество файлов')
+        self.teCountRow = QtWidgets.QTextEdit("50")
+        self.teCountRow.setFixedHeight(25)
+        self.teCountRow.setToolTip('число строк')
+        self.teCountCol = QtWidgets.QTextEdit("50")
+        self.teCountCol.setFixedHeight(25)
+        self.teCountCol.setToolTip('число столбцов')
 
         # создаем лайауты для  размещения виджетов
         self.layoutVerticalLeft = QtWidgets.QVBoxLayout()
@@ -105,13 +132,17 @@ class Main(QtWidgets.QWidget):
         self.layoutHorizontal = QtWidgets.QHBoxLayout(self)
 
         # добавляем виджеты в лайаут
-        self.layoutVerticalLeft.addWidget(self.tv)
+        self.layoutVerticalLeft.addWidget(self.tv, stretch=0)
+        self.layoutVerticalLeft.addWidget(self.teNum)
+        self.layoutVerticalLeft.addWidget(self.teCountRow)
+        self.layoutVerticalLeft.addWidget(self.teCountCol)
         self.layoutVerticalLeft.addWidget(btnGenerate)
         self.layoutVerticalLeft.addWidget(btnOpenProject)
 
         self.layoutVerticalCenter.addWidget(self.table_data)
         self.layoutVerticalCenter.addWidget(self.lbl_log)
         self.layoutVerticalCenter.addWidget(btn_load_dset)
+        self.layoutVerticalCenter.addWidget(btn_save_dset)
         self.layoutVerticalCenter.addWidget(graph)
 
         self.layoutVerticalRight.addWidget(self.tw_metadata, alignment=Qt.AlignBottom)
@@ -241,20 +272,6 @@ class Main(QtWidgets.QWidget):
             self.table_data.openPersistentEditor(self.model.index(row, cbox_column))
 
     def create_QTreeView(self):
-        # self.tv = QtWidgets.QTreeView()
-        # sti = QStandardItemModel(parent=self)
-        # rootitem1 = QStandardItem('Маленькие файлы')
-        # rootitem1.appendColumn([QStandardItem(f"f{j}") for j in range(10)])
-        # # for i in range(10):
-        # #     rootitem1.child(i).setEditable(True)
-        #
-        # sti.appendRow(rootitem1)
-        # rootitem2 = QStandardItem("Большие файлы")
-        #
-        # rootitem2.appendColumn([QStandardItem(f"BIGFILE{j}") for j in range(10)])
-        # sti.appendRow(rootitem2)
-        # sti.setHorizontalHeaderLabels(['Проекты',])
-        # self.tv.setModel(sti)
         # создаем QTreeView
         # self.tv = ProjectTree(r"HDF_FILES\geosim.meta")
         tv = ProjectTree()
@@ -275,6 +292,7 @@ class Main(QtWidgets.QWidget):
             #  заполняем таблицу метаданных
             self.fill_metadata_table(Metadata.cur_filename, Metadata.cur_dataset)
 
+    @timer
     def fill_metadata_table(self, filename, dataset):
         """ заполняем таблицу QTableWidjet метаданными выбранного датасета"""
         # очистка таблицы QTableWidjet
@@ -283,9 +301,6 @@ class Main(QtWidgets.QWidget):
         current_metadata = Metadata.current_dataset_metadata[filename][dataset]
         # заполняем таблицу
         for index, key in enumerate(current_metadata):
-            print("METADATA", Metadata.current_dataset_metadata)
-            print(index, key)
-            print('row count:', self.tw_metadata.rowCount())
             # вставляем строку в таблицу QTableWidjet
             self.tw_metadata.insertRow(index)
             # заносим название параметра в таблицу QTableWidjet
@@ -298,22 +313,16 @@ class Main(QtWidgets.QWidget):
             # заносим значение параметра в таблицу QTableWidjet
             self.tw_metadata.setItem(index, 1, QTableWidgetItem(value))
 
-    def load_dset(self):
-        """функция заполнения таблицы данными из выбранного датасета"""
-        # если датасет выбран  в деревер
-        if Metadata.cur_filename:
-            # собираем путь до файла с датасетом
-            dataset_file_path = os.path.join(Metadata.current_project_dir, Metadata.cur_filename)
-            # загружаем данные в numpy массив и в таблицу
-            self.load_data(dataset_file_path, Metadata.cur_dataset)
-
     def generate_datafiles(self):
         """ функция генерации проекта(множестов мелких файлов с одним датасетом в каждом
         и один большой с нескольким датасетами )"""
         # размерность генерируемых таблиц
-        dim = (150, 150)
+        # dim = (5000, 5000)
+        row = int(self.teCountRow.toPlainText())
+        col = int(self.teCountCol.toPlainText())
+        numbers = int(self.teNum.toPlainText())
+        dim = (row, col)
         # число генерируемы датасетов в одном файле и файлов с одним датасетом
-        numbers = 3
         # класс генератора путь к метафайлу (по умолчанию)  "HDF_FILES\geosim.meta"
         gen = Generator_HDF5_Hierarchy(dim, numbers, None)
         # создается много hdf5 файлов c одним датасетом
@@ -322,11 +331,36 @@ class Main(QtWidgets.QWidget):
         gen.generate_one_big()
         QtWidgets.QMessageBox.information(self, 'Генератор', "Генерация успешно завершена")
 
-    def open_project(self):
+    @timer
+    def open_project(self, debug="открыть проект"):
         # получаем путь к файлу метаданных проекта
         metadata_path = File_Dialog.get_load_metadata_filepath(self)
         # заполняем дерево QTreeView
-        self.tv.fill_treeview(metadata_path)
+        if metadata_path:
+            self.tv.fill_treeview(metadata_path)
+
+    @timer
+    def load_dset(self, debug="загрузка данных в таблицу"):
+        """функция заполнения таблицы данными из выбранного датасета"""
+        # если датасет выбран  в деревер
+        if Metadata.cur_filename:
+            # собираем путь до файла с датасетом
+            dataset_file_path = os.path.join(Metadata.current_project_dir, Metadata.cur_filename)
+            # загружаем данные в numpy массив и в таблицу
+            self.load_data(dataset_file_path, Metadata.cur_dataset)
+            # QtWidgets.QMessageBox.information(self, 'Загрузка',
+            #                                   f"Загрузка dataset {Metadata.cur_dataset} "
+            #                                   f"из файла {dataset_file_path} успешно завершена")
+
+    @timer
+    def save_dset(self, debug="сохранение данных из таблицы в датасет"):
+        if Metadata.cur_filename:
+            dataset_file_path = os.path.join(Metadata.current_project_dir, Metadata.cur_filename)
+            SaveDataset().__call__(self.backend_data, dataset_file_path, Metadata.cur_dataset)
+            QtWidgets.QMessageBox.information(self, 'Сохранение',
+                                              f"Сохранение dataset {Metadata.cur_dataset} "
+                                              f"в файл {dataset_file_path} успешно завершено")
+
 
 
 if __name__ == '__main__':
