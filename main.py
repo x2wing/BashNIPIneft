@@ -143,7 +143,7 @@ class Main(QtWidgets.QWidget):
         self.layoutVerticalCenter.addWidget(btn_save_dset)
         self.layoutVerticalCenter.addWidget(graph)
 
-        self.layoutVerticalRight.addWidget(self.tw_metadata, alignment=Qt.AlignBottom)
+        self.layoutVerticalRight.addWidget(self.tw_metadata)
         self.layoutVerticalRight.addWidget(btnLoad)
         self.layoutVerticalRight.addWidget(btnSave)
         self.layoutVerticalRight.addWidget(btnLoadFromFile)
@@ -234,6 +234,7 @@ class Main(QtWidgets.QWidget):
             # вызываем функцию загрузки и сброса данных в модели
             self.load_data(load_path)
 
+    @timer
     def init_data_model_and_table(self, table_dimension: tuple):
         choices = ['0', '1', '2', '3', '4', '5']
         # номер столбца с QComboBox
@@ -337,7 +338,6 @@ class Main(QtWidgets.QWidget):
         if self.h5geo_file_path:
             self.tv.fill_treeview(self.h5geo_file_path)
 
-
     @timer
     def load_dset(self, debug="загрузка данных в таблицу"):
         """функция заполнения таблицы данными из выбранного датасета"""
@@ -365,7 +365,6 @@ class Main(QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(self, 'Сохранение',
                                               f"Сохранение dataset {Metadata.cur_dataset} "
                                               f"в файл {dataset_file_path} успешно завершено")
-
 
 
 if __name__ == '__main__':
