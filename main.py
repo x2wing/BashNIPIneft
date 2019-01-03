@@ -338,7 +338,7 @@ class Main(QtWidgets.QWidget):
         self.h5geo_file_path = File_Dialog.get_load_metadata_filepath(self)
         # заполняем дерево QTreeView
         if self.h5geo_file_path:
-            self.tv.fill_treeview(self.h5geo_file_path)
+            self.tv.update_metadata(self.h5geo_file_path)
 
     @timer
     def load_dset(self, debug="загрузка данных в таблицу"):
