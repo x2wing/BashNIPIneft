@@ -22,6 +22,14 @@ class File_Dialog(QWidget):
         path, _ = QFileDialog.getOpenFileName(self, description, default_path, filter)
         return path
 
+    def get_load_metadata_filepath(self):
+        description = 'Загрузить проект'  # заголовок окна диалога
+        default_path = os.path.dirname(os.path.abspath(__file__))  # дефолтный путь диалогового окна
+        filter = "Таблицы hdf5  (*.meta)"  # фильтр расширения
+        # получаем путь к файлу
+        path, _ = QFileDialog.getOpenFileName(self, description, default_path, filter)
+        return path
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

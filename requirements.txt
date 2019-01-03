@@ -1,0 +1,5 @@
+numpy==1.13.3+mkl
+h5py==2.7.1
+pyqtgraph==0.10.0
+PyQt5==5.11.3
+PyYAML==3.13

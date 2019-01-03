@@ -1,27 +1,52 @@
+
+# use pipreqs --ignore .git --encoding utf8 --force "BashNIPIneft" to create requirements.txt
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
 import numpy as np
 import pyqtgraph as pg
 import os
+from PyQt5.QtCore import Qt, QModelIndex
+from PyQt5.QtWidgets import QTreeWidgetItem, QTreeView, QAbstractItemView, QTableWidgetItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from datetime import datetime
+import time
 
 # импорт модулей проекта
-from delegate import Delegate
-from model import Model
 from backend import Backend
-from iof import Save, Load
 from config import YAML_config
+from delegate import Delegate
 from dialog import File_Dialog
+from generator import Generator_HDF5_Hierarchy
+from model import Model
+from iof import Save, Load, SaveDataset
+from project_metadata import Metadata
+from tree_model import ProjectTree
 
 # генерация исходных данных
 np.set_printoptions(suppress=True, precision=3)
-raw_data = np.random.randint(-100, 100, (8, 8))
-row_n = raw_data.shape[0]  # число строк в numpy массиве исходных данных
-col_n = raw_data.shape[1]  # число столбцов в numpy массиве исходных данных
+# raw_data = np.random.randint(-100, 100, (50, 50))
+row_num = 8  # число строк в numpy массиве исходных данных
+col_num = 8  # число столбцов в numpy массиве исходных данных
 # путь к конфигу
 config_file = 'config.yaml'
 # абсолютный путь к hdf5 файлу по умолчанию для случая если конфиг пустой
 default_db_filepath = os.path.abspath('db.hdf5')
 # даные для записи в конфиг если он пуст
-default_config_data = {default_db_filepath: (row_n, col_n)}
+default_config_data = {default_db_filepath: (row_num, col_num)}
+
+raw_data = np.zeros((row_num, col_num), dtype=float)
+
+
+def timer(foo):
+    """ декоратор. выводит время выполнения методов"""
+
+    def wrapper(self, *args, **kargs):
+        tm = time.time()
+        result = foo(self, *args, **kargs)
+        print(f"ВРЕМЯ ВЫПОЛНЕНИЯ {foo.__name__}", time.time() - tm)
+        return result
+
+    return wrapper
 
 
 class Main(QtWidgets.QWidget):
@@ -29,40 +54,24 @@ class Main(QtWidgets.QWidget):
         super().__init__(parent)
         # создание класса работы с конфигом
         self.config = YAML_config(config_file, default_config_data)
-        # Варианты выбора для ячеек с Combobox
-        choices = ['0', '1', '2', '3', '4', '5']
-        # номер столбца с QComboBox
-        cbox_column = 1
-
-        # Получение данные через класс Backend
-        self.backend = Backend(raw_data, row_n - 1, col_n - 3)
-        # Вычисление столбца суммы и накопления
-        self.backend.recalculate()
-        # Получение ссылки на numpy array
-        self.backend_data = self.backend.get_data()
-
-        # Создание модели
-        self.model = Model(self.backend_data)
-        # изменение данных в модели вызывет перерасчет через метод recalc
-        self.model.c.data_changed.connect(self.recalc)
-        self.model.overflow.overflow.connect(self.overflow)
-
-        # создание виджетов таблицы
+        # создание виджета таблицы
         self.table_data = QtWidgets.QTableView()
-        # изменение значеняи ячейки одинарным щелчком
-        self.table_data.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
-        # подключиние модели к таблице
-        self.table_data.setModel(self.model)
-        # Установка делегата на второй столбец таблицы
-        self.table_data.setItemDelegateForColumn(cbox_column, Delegate(self, choices))
-        # получаем модель выделения
-        self.selectionModel = self.table_data.selectionModel()
-        # событие происходящее выделением столбца целчком по шапке таблицы
-        self.table_data.horizontalHeader().sectionClicked.connect(self.draw_graph)
+        # инициализация исходных данных модели и таблицы
+        # вынесено в отдельную функцию для возможности именения размерности таблицы в runtime
+        self.init_data_model_and_table((row_num, col_num))
 
-        # сделать Combobox редактируемым одним щелчком во 2(1) столбце
-        for row in range(self.backend_data.shape[0]):
-            self.table_data.openPersistentEditor(self.model.index(row, cbox_column))
+        # Получение данные через класс Backend depricated
+        # self.backend = Backend(raw_data, row_n - 1, col_n - 3)
+        # Вычисление столбца суммы и накопления
+
+        # Получение ссылки на numpy array depricated
+        # self.backend_data = self.backend.get_data()
+
+        # # Создание модели depricated
+        # self.model = Model(self.backend_data)
+        # # изменение данных в модели вызывет перерасчет через метод recalc depricated
+        # self.model.c.data_changed.connect(self.recalc)
+        # self.model.overflow.overflow.connect(self.overflow)
 
         # создаем виджет графика graph - виджет на форме plot - график отрисованный на виджете
         graph = pg.PlotWidget(nama='graph')  # pyqtgraph
@@ -77,28 +86,79 @@ class Main(QtWidgets.QWidget):
         btnLoadFromList = QtWidgets.QPushButton('Load from list')
         # Кнопка выбора пути сохранения файла
         btnSaveToFile = QtWidgets.QPushButton('Save to file')
+        btnModelChange = QtWidgets.QPushButton('Change model')
+
+        btnGenerate = QtWidgets.QPushButton('Сгенерировать hdf5')
+        btnOpenProject = QtWidgets.QPushButton('Открыть проект')
+        btn_load_dset = QtWidgets.QPushButton('Загрузить dataset')
+        btn_save_dset = QtWidgets.QPushButton('Сохранить dataset')
         #  события нажатия кнопок
         btnLoad.clicked.connect(lambda: self.load_data())
         btnSave.clicked.connect(lambda: Save()(self.backend_data, default_db_filepath))
         btnSaveToFile.clicked.connect(self.save_to_file)
         btnLoadFromFile.clicked.connect(self.load_from_file)
         btnLoadFromList.clicked.connect(self.load_from_list)
+        btnModelChange.clicked.connect(lambda: self.init_data_model_and_table((16, 16)))
+        btn_load_dset.clicked.connect(self.load_dset)
+        btn_save_dset.clicked.connect(self.save_dset)
+        btnGenerate.clicked.connect(self.generate_datafiles)
+        btnOpenProject.clicked.connect(self.open_project)
         # Создаем раскрывающийся список рабочих hdf5 файлов
         self.cmbFilesList = QtWidgets.QComboBox(self)
         # заполняем раскрывающийся список значениями из конфига
         self.cmbFilesList.addItems(self.config.get_str_paths_list())
-        # создаем лайаут для вертикального размещения виджетов
-        self.layoutVertical = QtWidgets.QVBoxLayout(self)
-        # добавляем виджеты в лайаут
-        self.layoutVertical.addWidget(self.table_data)
-        self.layoutVertical.addWidget(btnLoad)
-        self.layoutVertical.addWidget(btnSave)
-        self.layoutVertical.addWidget(btnLoadFromFile)
-        self.layoutVertical.addWidget(btnLoadFromList)
-        self.layoutVertical.addWidget(btnSaveToFile)
-        self.layoutVertical.addWidget(self.cmbFilesList)
+        # создаем иерархический список
+        self.tv = self.create_QTreeView()
+        # self.tv.setFixedHeight(400)
+        # создаем метку под таблицей
+        self.lbl_log = QtWidgets.QLabel()
+        # создаем QTableWidget для отображения методанных
+        self.tw_metadata = QtWidgets.QTableWidget()
+        self.tw_metadata.setColumnCount(2)
+        self.teNum = QtWidgets.QTextEdit("10")
+        self.teNum.setFixedHeight(25)
+        self.teNum.setToolTip('количество файлов')
+        self.teCountRow = QtWidgets.QTextEdit("50")
+        self.teCountRow.setFixedHeight(25)
+        self.teCountRow.setToolTip('число строк')
+        self.teCountCol = QtWidgets.QTextEdit("50")
+        self.teCountCol.setFixedHeight(25)
+        self.teCountCol.setToolTip('число столбцов')
 
-        self.layoutVertical.addWidget(graph)
+        # создаем лайауты для  размещения виджетов
+        self.layoutVerticalLeft = QtWidgets.QVBoxLayout()
+        self.layoutVerticalCenter = QtWidgets.QVBoxLayout()
+        self.layoutVerticalRight = QtWidgets.QVBoxLayout()
+        self.layoutHorizontal = QtWidgets.QHBoxLayout(self)
+
+        # добавляем виджеты в лайаут
+        self.layoutVerticalLeft.addWidget(self.tv, stretch=0)
+        self.layoutVerticalLeft.addWidget(self.teNum)
+        self.layoutVerticalLeft.addWidget(self.teCountRow)
+        self.layoutVerticalLeft.addWidget(self.teCountCol)
+        self.layoutVerticalLeft.addWidget(btnGenerate)
+        self.layoutVerticalLeft.addWidget(btnOpenProject)
+
+        self.layoutVerticalCenter.addWidget(self.table_data)
+        self.layoutVerticalCenter.addWidget(self.lbl_log)
+        self.layoutVerticalCenter.addWidget(btn_load_dset)
+        self.layoutVerticalCenter.addWidget(btn_save_dset)
+        self.layoutVerticalCenter.addWidget(graph)
+
+        self.layoutVerticalRight.addWidget(self.tw_metadata)
+        self.layoutVerticalRight.addWidget(btnLoad)
+        self.layoutVerticalRight.addWidget(btnSave)
+        self.layoutVerticalRight.addWidget(btnLoadFromFile)
+        self.layoutVerticalRight.addWidget(btnLoadFromList)
+        self.layoutVerticalRight.addWidget(btnSaveToFile)
+        self.layoutVerticalRight.addWidget(self.cmbFilesList)
+        self.layoutVerticalRight.addWidget(btnModelChange)
+
+        # добавляем вертикальные лайауты в горизонтальные
+        self.layoutHorizontal.addLayout(self.layoutVerticalLeft)
+        # self.layoutHorizontal.setStretch(1, 1000)
+        self.layoutHorizontal.addLayout(self.layoutVerticalCenter)
+        self.layoutHorizontal.addLayout(self.layoutVerticalRight)
 
         self.setWindowTitle('Тестовое задание')
         self.setGeometry(50, 50, 1000, 800)
@@ -126,9 +186,14 @@ class Main(QtWidgets.QWidget):
 
         self.backend.recalculate()
 
-    def load_data(self, filepath=default_db_filepath):
+    def load_data(self, filepath=default_db_filepath, dataset_name='default'):
         """ Загрузка данных из файла в nympy массив"""
-        Load()(self.backend_data, filepath)
+        # загружаем данные из hdf5  файла в numpy массив self.backend_data
+        Load()(self.backend_data, filepath, dataset_name=dataset_name)
+        # получаем размерности таблицы
+        dimension = (self.backend_data.shape[0], self.backend_data.shape[1])
+        # заполнение таблицы
+        self.init_data_model_and_table(dimension)
         # операция полного сброса модели для привентривной перересовки
         # http://doc.qt.io/qt-5/qabstractitemmodel.html#endResetModel
         self.model.endResetModel()
@@ -145,11 +210,11 @@ class Main(QtWidgets.QWidget):
         # если путь получен
         if save_path:
             # добавляем путь и метаданные в конфиг
-            self.config.add(config_file, {save_path: (row_n, col_n)})
+            self.config.add(config_file, {save_path: (self.row_n, self.col_n)})
             # сохраняем данные из numpy массива в файл
             Save()(self.backend_data, filepath=save_path)
             # добавляем запись о данном файле в виджет списка
-            self.cmbFilesList.addItem(save_path + f' ({row_n}, {col_n})')
+            self.cmbFilesList.addItem(save_path + f' ({self.row_n}, {self.col_n})')
 
     def load_from_file(self):
         """ Слот загрузки данных из произвольного файла в nympy массив"""
@@ -158,7 +223,7 @@ class Main(QtWidgets.QWidget):
         load_path = File_Dialog.get_load_filepath(self)
 
         if load_path:
-            # вызываем функцию загрузки и сброса данных в модели
+            # вызываем функцию загрузки и сброса данных в модель
             self.load_data(load_path)
 
     def load_from_list(self):
@@ -170,6 +235,138 @@ class Main(QtWidgets.QWidget):
         if load_path:
             # вызываем функцию загрузки и сброса данных в модели
             self.load_data(load_path)
+
+    @timer
+    def init_data_model_and_table(self, table_dimension: tuple):
+        choices = ['0', '1', '2', '3', '4', '5']
+        # номер столбца с QComboBox
+        cbox_column = 1
+
+        self.row_n = raw_data.shape[0]  # число строк в numpy массиве исходных данных
+        self.col_n = raw_data.shape[1]  # число столбцов в numpy массиве исходных данных
+        # Варианты выбора для ячеек с Combobox
+        # Получение данные через класс Backend
+        self.backend = Backend(raw_data, self.row_n - 1, self.col_n - 3)
+        self.backend_data = self.backend.get_data()
+        self.backend.recalculate()
+        # Создание модели
+        self.model = Model(self.backend_data)
+        # изменение данных в модели вызывет перерасчет через метод recalc
+        self.model.c.data_changed.connect(self.recalc)
+        self.model.overflow.overflow.connect(self.overflow)
+
+        # создание виджетов таблицы
+        # изменение значеняи ячейки одинарным щелчком
+        self.table_data.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
+        # подключиние модели к таблице
+        self.table_data.setModel(self.model)
+        self.table_data.resizeColumnsToContents()
+        # Установка делегата на второй столбец таблицы
+        self.table_data.setItemDelegateForColumn(cbox_column, Delegate(self, choices))
+        # получаем модель выделения
+        self.selectionModel = self.table_data.selectionModel()
+        # событие происходящее выделением столбца целчком по шапке таблицы
+        self.table_data.horizontalHeader().sectionClicked.connect(self.draw_graph)
+
+        # сделать Combobox редактируемым одним щелчком во 2(1) столбце
+        for row in range(self.backend_data.shape[0]):
+            self.table_data.openPersistentEditor(self.model.index(row, cbox_column))
+
+    def create_QTreeView(self):
+        # создаем QTreeView
+        # self.tv = ProjectTree(r"HDF_FILES\geosim.meta")
+        tv = ProjectTree()
+        # вешаем событие нажатия на элемент дерева
+        tv.clicked.connect(self.save_current_dataset_item)
+
+        return tv
+
+    def save_current_dataset_item(self, index: QModelIndex):
+        # получаем имя hdf5 файла выбранного элемента в дереве tv
+        Metadata.cur_filename = index.parent().data()
+        # получаем имя выбранного датасета
+        Metadata.cur_dataset = index.data()
+        # если выбран датасет а не что-то другое
+        if Metadata.cur_filename and Metadata.cur_dataset:
+            # выводим имена файла и датасета в метку lbl_log
+            self.lbl_log.setText(str(f'{Metadata.cur_dataset} {Metadata.cur_filename}'))
+            #  заполняем таблицу метаданных
+            self.fill_metadata_table(Metadata.cur_filename, Metadata.cur_dataset)
+
+    @timer
+    def fill_metadata_table(self, filename, dataset):
+        """ заполняем таблицу QTableWidjet метаданными выбранного датасета"""
+        # очистка таблицы QTableWidjet
+        self.tw_metadata.setRowCount(0)
+        # вытаскиваем метаданные выбранного датасета
+        current_metadata = Metadata.get_current_dataset_metadata(filename, dataset)
+        # заполняем таблицу
+        for index, key in enumerate(current_metadata):
+            # вставляем строку в таблицу QTableWidjet
+            self.tw_metadata.insertRow(index)
+            # заносим название параметра в таблицу QTableWidjet
+            self.tw_metadata.setItem(index, 0, QTableWidgetItem(str(key)))
+            # преобразуем unix time в человеко понятный формат в параметре 'dset create at'
+            if str(key) != "dset create at":
+                value = str(current_metadata[key])
+            else:
+                value = str(datetime.utcfromtimestamp(current_metadata[key]).strftime('%Y-%m-%d %H:%M:%S'))
+            # заносим значение параметра в таблицу QTableWidjet
+            self.tw_metadata.setItem(index, 1, QTableWidgetItem(value))
+
+    def generate_datafiles(self):
+        """ функция генерации проекта(множестов мелких файлов с одним датасетом в каждом
+        и один большой с нескольким датасетами )"""
+        # размерность генерируемых таблиц
+        # dim = (5000, 5000)
+        row = int(self.teCountRow.toPlainText())
+        col = int(self.teCountCol.toPlainText())
+        numbers = int(self.teNum.toPlainText())
+        dim = (row, col)
+        # число генерируемы датасетов в одном файле и файлов с одним датасетом
+        # класс генератора путь к метафайлу (по умолчанию)  "HDF_FILES\geosim.meta"
+        gen = Generator_HDF5_Hierarchy(dim, numbers, None)
+        # создается много hdf5 файлов c одним датасетом
+        gen.generate_many()
+        # создается один файл с несколькими датасетами
+        gen.generate_one_big()
+        QtWidgets.QMessageBox.information(self, 'Генератор', "Генерация успешно завершена")
+
+    @timer
+    def open_project(self, debug="открыть проект"):
+        # получаем путь к файлу метаданных проекта
+        self.h5geo_file_path = File_Dialog.get_load_metadata_filepath(self)
+        # заполняем дерево QTreeView
+        if self.h5geo_file_path:
+            self.tv.fill_treeview(self.h5geo_file_path)
+
+    @timer
+    def load_dset(self, debug="загрузка данных в таблицу"):
+        """функция заполнения таблицы данными из выбранного датасета"""
+        # если датасет выбран  в деревер
+        if Metadata.cur_filename:
+            # собираем путь до файла с датасетом
+            dataset_file_path = os.path.join(Metadata.current_project_dir, Metadata.cur_filename)
+            # загружаем данные в numpy массив и в таблицу
+            self.load_data(dataset_file_path, Metadata.cur_dataset)
+            # QtWidgets.QMessageBox.information(self, 'Загрузка',
+            #                                   f"Загрузка dataset {Metadata.cur_dataset} "
+            #                                   f"из файла {dataset_file_path} успешно завершена")
+
+    @timer
+    def save_dset(self, debug="сохранение данных из таблицы в датасет"):
+        if Metadata.cur_filename:
+            dataset_file_path = os.path.join(Metadata.current_project_dir, Metadata.cur_filename)
+            SaveDataset().__call__(self.backend_data, dataset_file_path, Metadata.cur_dataset)
+
+            metadata_instance = Metadata(self.h5geo_file_path)
+            metadata_instance.set_metadata(self.backend_data)
+            self.fill_metadata_table(Metadata.cur_filename, Metadata.cur_dataset)
+            self.tv.update_metadata()
+
+            QtWidgets.QMessageBox.information(self, 'Сохранение',
+                                              f"Сохранение dataset {Metadata.cur_dataset} "
+                                              f"в файл {dataset_file_path} успешно завершено")
 
 
 if __name__ == '__main__':
