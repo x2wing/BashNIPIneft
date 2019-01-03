@@ -85,12 +85,13 @@ class Main(QtWidgets.QWidget):
         btnModelChange.clicked.connect(lambda: self.init_data_model_and_table((16, 16)))
         btn_load_dset.clicked.connect(self.load_dset)
         btnGenerate.clicked.connect(self.generate_datafiles)
+        btnOpenProject.clicked.connect(self.open_project)
         # Создаем раскрывающийся список рабочих hdf5 файлов
         self.cmbFilesList = QtWidgets.QComboBox(self)
         # заполняем раскрывающийся список значениями из конфига
         self.cmbFilesList.addItems(self.config.get_str_paths_list())
         # создаем иерархический список
-        tv = self.fill_QTreeView()
+        self.tv = self.create_QTreeView()
         # создаем метку под таблицей
         self.lbl_log = QtWidgets.QLabel()
         # создаем QTableWidget для отображения методанных
@@ -104,7 +105,7 @@ class Main(QtWidgets.QWidget):
         self.layoutHorizontal = QtWidgets.QHBoxLayout(self)
 
         # добавляем виджеты в лайаут
-        self.layoutVerticalLeft.addWidget(tv)
+        self.layoutVerticalLeft.addWidget(self.tv)
         self.layoutVerticalLeft.addWidget(btnGenerate)
         self.layoutVerticalLeft.addWidget(btnOpenProject)
 
@@ -239,7 +240,7 @@ class Main(QtWidgets.QWidget):
         for row in range(self.backend_data.shape[0]):
             self.table_data.openPersistentEditor(self.model.index(row, cbox_column))
 
-    def fill_QTreeView(self):
+    def create_QTreeView(self):
         # self.tv = QtWidgets.QTreeView()
         # sti = QStandardItemModel(parent=self)
         # rootitem1 = QStandardItem('Маленькие файлы')
@@ -255,11 +256,12 @@ class Main(QtWidgets.QWidget):
         # sti.setHorizontalHeaderLabels(['Проекты',])
         # self.tv.setModel(sti)
         # создаем QTreeView
-        self.tv = ProjectTree(r"HDF_FILES\geosim.meta")
+        # self.tv = ProjectTree(r"HDF_FILES\geosim.meta")
+        tv = ProjectTree()
         # вешаем событие нажатия на элемент дерева
-        self.tv.clicked.connect(self.save_current_dataset_item)
+        tv.clicked.connect(self.save_current_dataset_item)
 
-        return self.tv
+        return tv
 
     def save_current_dataset_item(self, index: QModelIndex):
         # получаем имя hdf5 файла выбранного элемента в дереве tv
@@ -311,13 +313,20 @@ class Main(QtWidgets.QWidget):
         # размерность генерируемых таблиц
         dim = (150, 150)
         # число генерируемы датасетов в одном файле и файлов с одним датасетом
-        numbers = 10
+        numbers = 3
         # класс генератора путь к метафайлу (по умолчанию)  "HDF_FILES\geosim.meta"
         gen = Generator_HDF5_Hierarchy(dim, numbers, None)
         # создается много hdf5 файлов c одним датасетом
         gen.generate_many()
         # создается один файл с несколькими датасетами
         gen.generate_one_big()
+        QtWidgets.QMessageBox.information(self, 'Генератор', "Генерация успешно завершена")
+
+    def open_project(self):
+        # получаем путь к файлу метаданных проекта
+        metadata_path = File_Dialog.get_load_metadata_filepath(self)
+        # заполняем дерево QTreeView
+        self.tv.fill_treeview(metadata_path)
 
 
 if __name__ == '__main__':
