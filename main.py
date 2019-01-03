@@ -362,7 +362,7 @@ class Main(QtWidgets.QWidget):
             metadata_instance = Metadata(self.h5geo_file_path)
             metadata_instance.set_metadata(self.backend_data)
             self.fill_metadata_table(Metadata.cur_filename, Metadata.cur_dataset)
-            self.tv.update_metadata()
+            self.tv.update_metadata(self.h5geo_file_path)
 
             QtWidgets.QMessageBox.information(self, 'Сохранение',
                                               f"Сохранение dataset {Metadata.cur_dataset} "
